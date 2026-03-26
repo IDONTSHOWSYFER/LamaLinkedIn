@@ -1,0 +1,237 @@
+@custom-variant dark (&:is(.dark *));
+
+/* ========================================
+   LAMA LINKED.IN DESIGN SYSTEM
+   ======================================== */
+
+/* Primitive Color Tokens */
+:root {
+  /* Primary LinkedIn Blue */
+  --color-primary-blue: #0A66C2;
+  --color-primary-dark: #084C8C;
+
+  /* Accent Lama (warm tones) */
+  --color-accent-lama: #F4B183;
+  --color-accent-caramel: #C97C5D;
+
+  /* Neutrals */
+  --color-neutral-950: #0B1220;
+  --color-neutral-900: #111827;
+  --color-neutral-600: #374151;
+  --color-neutral-400: #9CA3AF;
+  --color-neutral-200: #E5E7EB;
+  --color-neutral-50: #F9FAFB;
+  --color-neutral-white: #FFFFFF;
+
+  /* Status Colors */
+  --color-success: #16A34A;
+  --color-warning: #F59E0B;
+  --color-danger: #DC2626;
+
+  /* Glass Effect Variables */
+  --glass-blur: 20px;
+  --glass-opacity: 0.75;
+  --glass-border-opacity: 0.2;
+}
+
+/* Light Mode (Default) */
+:root {
+  --font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size: 16px;
+
+  /* Semantic Tokens - Light Mode */
+  --background: var(--color-neutral-50);
+  --background-elevated: var(--color-neutral-white);
+  --foreground: var(--color-neutral-950);
+  --foreground-muted: var(--color-neutral-600);
+
+  --primary: var(--color-primary-blue);
+  --primary-hover: var(--color-primary-dark);
+  --primary-foreground: var(--color-neutral-white);
+
+  --secondary: var(--color-neutral-200);
+  --secondary-hover: var(--color-neutral-400);
+  --secondary-foreground: var(--color-neutral-950);
+
+  --accent: var(--color-accent-lama);
+  --accent-hover: var(--color-accent-caramel);
+  --accent-foreground: var(--color-neutral-950);
+
+  --muted: var(--color-neutral-200);
+  --muted-foreground: var(--color-neutral-600);
+
+  --border: var(--color-neutral-200);
+  --border-glass: rgba(255, 255, 255, 0.2);
+  --input-border: var(--color-neutral-400);
+  --input-background: var(--color-neutral-white);
+  --input-focus-ring: var(--color-primary-blue);
+
+  --success: var(--color-success);
+  --success-foreground: var(--color-neutral-white);
+  --warning: var(--color-warning);
+  --warning-foreground: var(--color-neutral-950);
+  --danger: var(--color-danger);
+  --danger-foreground: var(--color-neutral-white);
+
+  /* Glass Card Backgrounds */
+  --glass-background: rgba(255, 255, 255, 0.75);
+  --glass-shadow: 0 8px 32px rgba(11, 18, 32, 0.1);
+  --glass-shadow-hover: 0 12px 48px rgba(11, 18, 32, 0.15);
+
+  /* Typography Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(11, 18, 32, 0.05);
+  --shadow-md: 0 4px 6px rgba(11, 18, 32, 0.07);
+  --shadow-lg: 0 10px 15px rgba(11, 18, 32, 0.1);
+  --shadow-xl: 0 20px 25px rgba(11, 18, 32, 0.15);
+
+  /* Focus Ring */
+  --ring-width: 2px;
+  --ring-offset: 2px;
+  --ring-color: var(--color-primary-blue);
+}
+
+/* Dark Mode */
+.dark {
+  --background: var(--color-neutral-950);
+  --background-elevated: var(--color-neutral-900);
+  --foreground: var(--color-neutral-50);
+  --foreground-muted: var(--color-neutral-400);
+
+  --primary: #60A5FA;
+  --primary-hover: #93C5FD;
+  --primary-foreground: var(--color-neutral-white);
+
+  --secondary: var(--color-neutral-900);
+  --secondary-hover: var(--color-neutral-600);
+  --secondary-foreground: var(--color-neutral-50);
+
+  --accent: var(--color-accent-lama);
+  --accent-hover: var(--color-accent-caramel);
+  --accent-foreground: var(--color-neutral-950);
+
+  --muted: var(--color-neutral-900);
+  --muted-foreground: var(--color-neutral-400);
+
+  --border: var(--color-neutral-600);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --input-border: var(--color-neutral-600);
+  --input-background: var(--color-neutral-900);
+  --input-focus-ring: var(--color-primary-blue);
+
+  --success: var(--color-success);
+  --success-foreground: var(--color-neutral-white);
+  --warning: var(--color-warning);
+  --warning-foreground: var(--color-neutral-950);
+  --danger: var(--color-danger);
+  --danger-foreground: var(--color-neutral-white);
+
+  /* Glass Card Backgrounds - Dark Mode */
+  --glass-background: rgba(17, 24, 39, 0.75);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --glass-shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.4);
+}
+
+/* Tailwind Integration */
+@theme inline {
+  --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-border: var(--border);
+  --color-border-glass: var(--border-glass);
+  --color-input-border: var(--input-border);
+  --color-input-background: var(--input-background);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+
+  --color-glass-background: var(--glass-background);
+  --color-ring: var(--ring-color);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+}
+
+/* Base Styles */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Utility Classes for Glass Effect */
+@layer utilities {
+  .glass {
+    background: var(--glass-background);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--border-glass);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-hover:hover {
+    box-shadow: var(--glass-shadow-hover);
+  }
+
+  .focus-ring:focus-visible {
+    outline: var(--ring-width) solid var(--ring-color);
+    outline-offset: var(--ring-offset);
+    border-radius: var(--radius-md);
+  }
+}

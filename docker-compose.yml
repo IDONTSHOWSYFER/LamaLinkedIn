@@ -1,0 +1,58 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lama_linkedin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # API Server
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@postgres:5432/lama_linkedin?schema=public"
+      JWT_SECRET: "${JWT_SECRET:-change-me-in-production}"
+      PORT: "3001"
+      NODE_ENV: production
+      FRONTEND_URL: "${FRONTEND_URL:-http://localhost:5173}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET}"
+      STRIPE_PRICE_ID: "${STRIPE_PRICE_ID}"
+      STRIPE_PRICE_PRO_ID: "${STRIPE_PRICE_PRO_ID}"
+      SMTP_HOST: "${SMTP_HOST:-smtp.resend.com}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: "${SMTP_USER}"
+      SMTP_PASS: "${SMTP_PASS}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Web (Tunnel de Vente)
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
