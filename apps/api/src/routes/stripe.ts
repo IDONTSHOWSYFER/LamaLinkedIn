@@ -5,8 +5,21 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-11-20.acacia' as any });
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
+const stripe = STRIPE_KEY && !STRIPE_KEY.startsWith('sk_test_...')
+  ? new Stripe(STRIPE_KEY, { apiVersion: '2024-11-20.acacia' as any })
+  : null;
+
 export const stripeRouter: RouterType = Router();
+
+// Guard: if Stripe is not configured, return 503 on all payment routes
+function requireStripe(_req: Request, res: Response, next: Function) {
+  if (!stripe) {
+    res.status(503).json({ message: 'Stripe non configuré' });
+    return;
+  }
+  next();
+}
 
 // Helper: extract userId from Bearer token if present (optional auth)
 function extractUserId(req: Request): string | null {
@@ -20,7 +33,7 @@ function extractUserId(req: Request): string | null {
   }
 }
 
-stripeRouter.post('/create-checkout', async (req: Request, res: Response): Promise<void> => {
+stripeRouter.post('/create-checkout', requireStripe, async (req: Request, res: Response): Promise<void> => {
   try {
     const { installId, plan } = req.body;
     const userId = extractUserId(req);
@@ -40,7 +53,7 @@ stripeRouter.post('/create-checkout', async (req: Request, res: Response): Promi
     let customerId = user?.stripeCustomerId;
 
     if (!customerId) {
-      const customer = await stripe.customers.create({
+      const customer = await stripe!.customers.create({
         email: user?.email,
         metadata: { installId: installId || '', userId: user?.id || '' },
       });
@@ -55,7 +68,7 @@ stripeRouter.post('/create-checkout', async (req: Request, res: Response): Promi
       ? process.env.STRIPE_PRICE_PRO_ID || process.env.STRIPE_PRICE_ID
       : process.env.STRIPE_PRICE_ID;
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripe!.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       mode: 'subscription',
@@ -75,7 +88,7 @@ stripeRouter.post('/create-checkout', async (req: Request, res: Response): Promi
   }
 });
 
-stripeRouter.post('/portal', async (req: Request, res: Response): Promise<void> => {
+stripeRouter.post('/portal', requireStripe, async (req: Request, res: Response): Promise<void> => {
   try {
     const { installId } = req.body;
     const userId = extractUserId(req);
@@ -92,7 +105,7 @@ stripeRouter.post('/portal', async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const portalSession = await stripe.billingPortal.sessions.create({
+    const portalSession = await stripe!.billingPortal.sessions.create({
       customer: user.stripeCustomerId,
       return_url: `${process.env.FRONTEND_URL || 'https://lamalinked.in'}/account`,
     });
@@ -130,12 +143,12 @@ stripeRouter.get('/status', async (req: Request, res: Response): Promise<void> =
 });
 
 // Stripe webhook
-stripeRouter.post('/webhook', async (req: Request, res: Response): Promise<void> => {
+stripeRouter.post('/webhook', requireStripe, async (req: Request, res: Response): Promise<void> => {
   const sig = req.headers['stripe-signature'] as string;
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET || '');
+    event = stripe!.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET || '');
   } catch (err) {
     console.error('Webhook signature failed:', err);
     res.status(400).send('Webhook Error');
