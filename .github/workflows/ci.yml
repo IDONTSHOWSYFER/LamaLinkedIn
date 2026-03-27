@@ -19,6 +19,8 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma Client
+        run: pnpm --filter @lbp/api exec prisma generate
       - name: Lint Extension
         run: pnpm --filter @lbp/extension lint
       - name: Lint API
@@ -41,6 +43,8 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma Client
+        run: pnpm --filter @lbp/api exec prisma generate
       - name: Build Extension
         run: pnpm build:extension
       - name: Build API
