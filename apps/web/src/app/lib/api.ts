@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://lama-api-l09j.onrender.com/api';
 
 export async function api<T = unknown>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('lbp_token');

@@ -30,7 +30,7 @@ chrome.runtime.onMessage.addListener((msg, _sender) => {
     chrome.storage.local.get(['lbp_auth', 'lbp_api_url'], (result) => {
       const auth = result.lbp_auth;
       if (auth?.token) {
-        const apiUrl = result.lbp_api_url || 'https://api.lamalinked.in';
+        const apiUrl = result.lbp_api_url || 'https://lama-api-l09j.onrender.com';
         fetch(`${apiUrl}/api/events`, {
           method: 'POST',
           headers: {
