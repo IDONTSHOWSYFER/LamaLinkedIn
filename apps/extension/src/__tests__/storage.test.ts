@@ -38,7 +38,7 @@ describe('Types', () => {
     expect(DEFAULT_CONFIG.tier).toBe('free');
     expect(DEFAULT_CONFIG.likesPerSession).toBe(20);
     expect(DEFAULT_CONFIG.commentsPerSession).toBe(3);
-    expect(DEFAULT_CONFIG.botSpeed).toBe(5);
+    expect(DEFAULT_CONFIG.botSpeed).toBe(3);
     expect(DEFAULT_CONFIG.alertsActive).toBe(true);
   });
 
