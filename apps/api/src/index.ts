@@ -5,9 +5,19 @@ import { authRouter } from './routes/auth.js';
 import { eventsRouter } from './routes/events.js';
 import { stripeRouter } from './routes/stripe.js';
 import { leadRouter } from './routes/lead.js';
+import { securityHeaders, cacheControl, performanceLogger } from './middleware/greenIt.js';
+import { rateLimiter } from './middleware/rateLimiter.js';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
+
+// ─── Sécurité & Green IT ───────────────────────────────────────────────────
+app.use(securityHeaders);       // Headers OWASP (sécurité)
+app.use(cacheControl);          // Cache-Control intelligent (éco-conception)
+app.use(performanceLogger);     // Monitoring des requêtes lentes (éco-conception)
+
+// Rate limiter global : 200 req/min par IP (protection DDoS, NoSQL/Redis)
+app.use(rateLimiter({ maxRequests: 200, windowSeconds: 60, prefix: 'rl:global' }));
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -24,11 +34,13 @@ app.use(cors({
 
 // Stripe webhook needs raw body
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
+
+// Limite la taille du body JSON (éco-conception : évite les payloads abusifs)
+app.use(express.json({ limit: '100kb' }));
 
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', version: '1.0.0' });
+  res.json({ status: 'ok', version: '1.0.0', greenIt: true });
 });
 
 // Routes

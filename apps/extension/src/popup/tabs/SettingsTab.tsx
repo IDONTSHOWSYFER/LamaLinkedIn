@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Clock, Coffee, Target, Zap, Save, Upload, Crown, ExternalLink, User, CreditCard, BarChart3 } from 'lucide-react';
+import { Clock, Coffee, Target, Zap, Save, Upload, Crown, ExternalLink, User, CreditCard, BarChart3, BookOpen, Mail } from 'lucide-react';
 import { Button, Card, Slider, Toggle } from '@/components/core';
 import { useStore } from '../store';
+import { api } from '@/lib/api';
 
 const SITE_URL = 'https://lamalinked.in';
 
@@ -10,6 +11,8 @@ export function SettingsTab() {
   const [local, setLocal] = useState(config);
   const [saved, setSaved] = useState(false);
   const [csvMsg, setCsvMsg] = useState('');
+  const [ebookEmail, setEbookEmail] = useState('');
+  const [ebookStatus, setEbookStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
   const csvRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setLocal(config), [config]);
@@ -157,6 +160,54 @@ export function SettingsTab() {
             description="Notifications en cas de limite atteinte"
           />
         </Card>
+
+        {/* E-book gratuit */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <BookOpen className="w-4 h-4 text-accent" />
+            E-book gratuit
+          </label>
+          <Card padding="sm">
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Recevez notre e-book <strong>« 30 scripts de commentaires LinkedIn »</strong> gratuitement par email.
+              </p>
+              {ebookStatus === 'sent' ? (
+                <div className="flex items-center gap-2 text-xs text-green-500 font-medium py-1">
+                  <Mail className="w-3.5 h-3.5" />
+                  E-book envoyé ! Vérifiez votre boîte mail.
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="votre@email.com"
+                    value={ebookEmail}
+                    onChange={e => setEbookEmail(e.target.value)}
+                    className="flex-1 h-8 px-3 rounded-lg text-xs bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!ebookEmail.includes('@')) return;
+                      setEbookStatus('loading');
+                      try {
+                        await api.requestEbook(ebookEmail);
+                        setEbookStatus('sent');
+                      } catch {
+                        setEbookStatus('error');
+                        setTimeout(() => setEbookStatus('idle'), 3000);
+                      }
+                    }}
+                    disabled={ebookStatus === 'loading'}
+                    className="h-8 px-3 rounded-lg text-xs font-medium bg-accent text-white hover:bg-accent/90 transition-all disabled:opacity-50"
+                  >
+                    {ebookStatus === 'loading' ? '...' : ebookStatus === 'error' ? 'Erreur' : 'Recevoir'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
 
         {/* Account & Website Links */}
         <div className="space-y-2">

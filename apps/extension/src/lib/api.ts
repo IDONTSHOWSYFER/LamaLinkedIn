@@ -62,4 +62,11 @@ export const api = {
 
   checkPremium: (installId: string) =>
     request<{ premium: boolean; expires: string | null }>(`/api/stripe/status?installId=${installId}`),
+
+  // E-book (lead magnet)
+  requestEbook: (email: string) =>
+    request<{ message: string }>('/api/lead', {
+      method: 'POST',
+      body: JSON.stringify({ firstName: 'Extension User', email }),
+    }),
 };

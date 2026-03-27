@@ -3,9 +3,25 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../db/client.js';
 import { authMiddleware, signToken, AuthRequest } from '../middleware/auth.js';
+import { rateLimiter } from '../middleware/rateLimiter.js';
 import { sendWelcomeEmail } from '../services/email.js';
 
 export const authRouter: RouterType = Router();
+
+// Rate limiting : protection anti-brute-force (NoSQL/Redis)
+const loginLimiter = rateLimiter({
+  maxRequests: 5,
+  windowSeconds: 60,
+  prefix: 'rl:login',
+  message: 'Trop de tentatives de connexion. Réessayez dans 1 minute.',
+});
+
+const registerLimiter = rateLimiter({
+  maxRequests: 3,
+  windowSeconds: 300,
+  prefix: 'rl:register',
+  message: 'Trop de créations de compte. Réessayez dans 5 minutes.',
+});
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -28,7 +44,7 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(6),
 });
 
-authRouter.post('/register', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/register', registerLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, name } = registerSchema.parse(req.body);
 
@@ -62,7 +78,7 @@ authRouter.post('/register', async (req: Request, res: Response): Promise<void> 
   }
 });
 
-authRouter.post('/login', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/login', loginLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = loginSchema.parse(req.body);
 
