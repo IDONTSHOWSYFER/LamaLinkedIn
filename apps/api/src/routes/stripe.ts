@@ -6,9 +6,16 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
-const stripe = STRIPE_KEY && !STRIPE_KEY.startsWith('sk_test_...')
+const stripe = STRIPE_KEY && !STRIPE_KEY.startsWith('sk_test_...') && !STRIPE_KEY.startsWith('sk_live_...')
   ? new Stripe(STRIPE_KEY, { apiVersion: '2024-11-20.acacia' as any })
   : null;
+
+// Price IDs per plan
+const PRICE_IDS: Record<string, string | undefined> = {
+  weekly: process.env.STRIPE_PRICE_WEEKLY_ID,
+  monthly: process.env.STRIPE_PRICE_MONTHLY_ID,
+  yearly: process.env.STRIPE_PRICE_YEARLY_ID,
+};
 
 export const stripeRouter: RouterType = Router();
 
@@ -63,10 +70,14 @@ stripeRouter.post('/create-checkout', requireStripe, async (req: Request, res: R
       }
     }
 
-    // Select price based on plan
-    const priceId = plan === 'pro'
-      ? process.env.STRIPE_PRICE_PRO_ID || process.env.STRIPE_PRICE_ID
-      : process.env.STRIPE_PRICE_ID;
+    // Select price based on plan (weekly, monthly, yearly)
+    const selectedPlan = plan || 'monthly';
+    const priceId = PRICE_IDS[selectedPlan] || process.env.STRIPE_PRICE_MONTHLY_ID;
+
+    if (!priceId) {
+      res.status(400).json({ message: `Plan "${selectedPlan}" non configuré` });
+      return;
+    }
 
     const session = await stripe!.checkout.sessions.create({
       customer: customerId,
@@ -78,7 +89,7 @@ stripeRouter.post('/create-checkout', requireStripe, async (req: Request, res: R
       }],
       success_url: `${process.env.FRONTEND_URL || 'https://lamalinked.in'}/dashboard?checkout=success`,
       cancel_url: `${process.env.FRONTEND_URL || 'https://lamalinked.in'}/pricing`,
-      metadata: { installId: installId || '', userId: user?.id || '', plan: plan || 'premium' },
+      metadata: { installId: installId || '', userId: user?.id || '', plan: selectedPlan },
     });
 
     res.json({ url: session.url });
@@ -160,9 +171,11 @@ stripeRouter.post('/webhook', requireStripe, async (req: Request, res: Response)
       const session = event.data.object as Stripe.Checkout.Session;
       const installId = session.metadata?.installId;
       const userId = session.metadata?.userId;
-      const plan = session.metadata?.plan || 'premium';
+      const plan = session.metadata?.plan || 'monthly';
       const expires = new Date();
-      expires.setMonth(expires.getMonth() + 1);
+      if (plan === 'weekly') expires.setDate(expires.getDate() + 7);
+      else if (plan === 'yearly') expires.setFullYear(expires.getFullYear() + 1);
+      else expires.setMonth(expires.getMonth() + 1);
       const updateData = { tier: plan, premiumExpires: expires, stripeCustomerId: session.customer as string };
 
       if (userId) {
