@@ -1,9 +1,10 @@
 import nodemailer from 'nodemailer';
 
+const smtpPort = parseInt(process.env.SMTP_PORT || '465');
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
+  host: process.env.SMTP_HOST || 'smtp.resend.com',
+  port: smtpPort,
+  secure: smtpPort === 465,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -11,10 +12,12 @@ const transporter = nodemailer.createTransport({
 });
 
 const FROM = 'Lama Linked.In <noreply@lamalinked.in>';
+const REPLY_TO = 'heycestlelama@gmail.com';
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<void> {
   await transporter.sendMail({
     from: FROM,
+    replyTo: REPLY_TO,
     to,
     subject: 'Bienvenue sur Lama Linked.In !',
     html: `
@@ -48,6 +51,7 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<void> 
 export async function sendPaymentSuccessEmail(to: string, name: string): Promise<void> {
   await transporter.sendMail({
     from: FROM,
+    replyTo: REPLY_TO,
     to,
     subject: 'Paiement confirmé — Lama Linked.In Premium',
     html: `
@@ -83,6 +87,7 @@ export async function sendEbookEmail(to: string, firstName: string): Promise<voi
   const downloadUrl = `${process.env.FRONTEND_URL || 'https://lamalinked.in'}/ebook/download`;
   await transporter.sendMail({
     from: FROM,
+    replyTo: REPLY_TO,
     to,
     subject: 'Votre ebook Linked.In est prêt !',
     html: `
@@ -121,6 +126,7 @@ export async function sendPasswordResetEmail(to: string, resetToken: string): Pr
   const resetUrl = `${process.env.FRONTEND_URL || 'https://lamalinked.in'}/reset-password?token=${resetToken}`;
   await transporter.sendMail({
     from: FROM,
+    replyTo: REPLY_TO,
     to,
     subject: 'Réinitialisation de mot de passe — Lama Linked.In',
     html: `
