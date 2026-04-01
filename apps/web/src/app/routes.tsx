@@ -41,6 +41,7 @@ export const router = createBrowserRouter([
         ),
       },
       { path: "legal", Component: Legal },
+      { path: "privacy", Component: Legal },
       {
         path: "*",
         Component: () => (
