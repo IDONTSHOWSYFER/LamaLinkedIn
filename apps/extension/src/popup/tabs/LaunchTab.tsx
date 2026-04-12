@@ -1,6 +1,7 @@
-import { Sparkles, Settings, Shield, Bot } from 'lucide-react';
+import { Settings, Shield, Bot } from 'lucide-react';
 import { Button, Badge } from '@/components/core';
 import { useStore } from '../store';
+import logoImg from '@/assets/icons/logo.png';
 
 export function LaunchTab() {
   const { config, setActiveTab, startBot, toggleMode } = useStore();
@@ -10,8 +11,8 @@ export function LaunchTab() {
       {/* Logo */}
       <div className="flex justify-center mb-6">
         <div className="relative">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-md">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-md overflow-hidden">
+            <img src={logoImg} alt="Lama Linked.In" className="w-12 h-12 object-contain" />
           </div>
           <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-accent rounded-full border-2 border-background" />
         </div>

@@ -22,9 +22,12 @@ app.use(rateLimiter({ maxRequests: 200, windowSeconds: 60, prefix: 'rl:global' }
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
+    const frontendUrl = process.env.FRONTEND_URL || '';
     if (origin.startsWith('chrome-extension://') ||
         origin.startsWith('http://localhost') ||
-        origin === process.env.FRONTEND_URL) {
+        origin === frontendUrl ||
+        origin === frontendUrl.replace('https://', 'https://www.') ||
+        origin === frontendUrl.replace('https://www.', 'https://')) {
       return callback(null, true);
     }
     callback(null, false);
