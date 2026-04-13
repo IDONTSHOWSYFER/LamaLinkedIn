@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const smtpPort = parseInt(process.env.SMTP_PORT || '465');
@@ -90,8 +89,7 @@ export async function sendEbookEmail(to: string, firstName: string): Promise<voi
   const logoUrl = 'https://raw.githubusercontent.com/IDONTSHOWSYFER/LamaLinkedIn/main/apps/extension/src/assets/icons/logo.png';
 
   // Resolve ebook PDF path relative to project root
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const ebookPath = path.resolve(__dirname, '../../public/ebook/playbook_linkedin.pdf');
+  const ebookPath = path.resolve(process.cwd(), 'public/ebook/playbook_linkedin.pdf');
 
   const attachments: nodemailer.SendMailOptions['attachments'] = [];
   if (fs.existsSync(ebookPath)) {
