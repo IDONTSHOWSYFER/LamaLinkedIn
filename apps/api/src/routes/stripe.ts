@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
-const stripe = STRIPE_KEY && !STRIPE_KEY.startsWith('sk_test_...') && !STRIPE_KEY.startsWith('sk_live_...')
+const stripe = STRIPE_KEY && STRIPE_KEY.startsWith('sk_')
   ? new Stripe(STRIPE_KEY, { apiVersion: '2024-11-20.acacia' as any })
   : null;
 
