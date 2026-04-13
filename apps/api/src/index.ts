@@ -19,15 +19,18 @@ app.use(performanceLogger);     // Monitoring des requêtes lentes (éco-concept
 // Rate limiter global : 200 req/min par IP (protection DDoS, NoSQL/Redis)
 app.use(rateLimiter({ maxRequests: 200, windowSeconds: 60, prefix: 'rl:global' }));
 
+const ALLOWED_ORIGINS = [
+  'https://lamalinked.in',
+  'https://www.lamalinked.in',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    const frontendUrl = process.env.FRONTEND_URL || '';
     if (origin.startsWith('chrome-extension://') ||
         origin.startsWith('http://localhost') ||
-        origin === frontendUrl ||
-        origin === frontendUrl.replace('https://', 'https://www.') ||
-        origin === frontendUrl.replace('https://www.', 'https://')) {
+        ALLOWED_ORIGINS.includes(origin)) {
       return callback(null, true);
     }
     callback(null, false);
