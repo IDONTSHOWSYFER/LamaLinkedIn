@@ -22,6 +22,7 @@ app.use(rateLimiter({ maxRequests: 200, windowSeconds: 60, prefix: 'rl:global' }
 const ALLOWED_ORIGINS = [
   'https://lamalinked.in',
   'https://www.lamalinked.in',
+  'https://lama-linked-in-web.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
