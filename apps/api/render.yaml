@@ -21,13 +21,15 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
-      - key: STRIPE_PRICE_ID
+      - key: STRIPE_PRICE_WEEKLY_ID
         sync: false
-      - key: STRIPE_PRICE_PRO_ID
+      - key: STRIPE_PRICE_MONTHLY_ID
         sync: false
-      - key: SMTP_HOST
+      - key: STRIPE_PRICE_YEARLY_ID
         sync: false
-      - key: SMTP_USER
+      - key: RESEND_API_KEY
         sync: false
-      - key: SMTP_PASS
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_REPLY_TO
         sync: false

@@ -41,6 +41,9 @@ export function rateLimiter(options: RateLimitOptions) {
   } = options;
 
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    // Les préflights CORS ne doivent jamais être limités ni ralentis.
+    if (req.method === 'OPTIONS') { next(); return; }
+
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const key = `${prefix}:${ip}:${Math.floor(Date.now() / (windowSeconds * 1000))}`;
 
@@ -89,6 +92,8 @@ export function userRateLimiter(options: RateLimitOptions & { userIdExtractor?: 
   } = options;
 
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (req.method === 'OPTIONS') { next(); return; }
+
     const userId = userIdExtractor
       ? userIdExtractor(req)
       : (req as any).userId || 'anonymous';

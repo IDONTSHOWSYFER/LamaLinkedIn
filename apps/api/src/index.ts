@@ -11,14 +11,6 @@ import { rateLimiter } from './middleware/rateLimiter.js';
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
-// ─── Sécurité & Green IT ───────────────────────────────────────────────────
-app.use(securityHeaders);       // Headers OWASP (sécurité)
-app.use(cacheControl);          // Cache-Control intelligent (éco-conception)
-app.use(performanceLogger);     // Monitoring des requêtes lentes (éco-conception)
-
-// Rate limiter global : 200 req/min par IP (protection DDoS, NoSQL/Redis)
-app.use(rateLimiter({ maxRequests: 200, windowSeconds: 60, prefix: 'rl:global' }));
-
 const ALLOWED_ORIGINS = [
   'https://lamalinked.in',
   'https://www.lamalinked.in',
@@ -26,6 +18,10 @@ const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
+// ─── CORS en premier ────────────────────────────────────────────────────────
+// Les préflights OPTIONS doivent répondre immédiatement, AVANT tout middleware
+// potentiellement lent (rate limiter / Redis). Sinon chaque préflight paie la
+// latence réseau inutilement.
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
@@ -38,6 +34,14 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// ─── Sécurité & Green IT ───────────────────────────────────────────────────
+app.use(securityHeaders);       // Headers OWASP (sécurité)
+app.use(cacheControl);          // Cache-Control intelligent (éco-conception)
+app.use(performanceLogger);     // Monitoring des requêtes lentes (éco-conception)
+
+// Rate limiter global : 200 req/min par IP (protection DDoS, NoSQL/Redis)
+app.use(rateLimiter({ maxRequests: 200, windowSeconds: 60, prefix: 'rl:global' }));
 
 // Stripe webhook needs raw body
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));

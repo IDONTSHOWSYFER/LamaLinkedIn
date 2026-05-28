@@ -176,7 +176,9 @@ stripeRouter.post('/webhook', requireStripe, async (req: Request, res: Response)
       if (plan === 'weekly') expires.setDate(expires.getDate() + 7);
       else if (plan === 'yearly') expires.setFullYear(expires.getFullYear() + 1);
       else expires.setMonth(expires.getMonth() + 1);
-      const updateData = { tier: plan, premiumExpires: expires, stripeCustomerId: session.customer as string };
+      // tier doit être 'premium' (c'est ce que vérifient /status et /auth/me) ;
+      // la durée du plan est portée par premiumExpires.
+      const updateData = { tier: 'premium', premiumExpires: expires, stripeCustomerId: session.customer as string };
 
       if (userId) {
         await prisma.user.update({ where: { id: userId }, data: updateData }).catch(() => {});

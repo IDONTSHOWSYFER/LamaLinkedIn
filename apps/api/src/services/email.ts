@@ -1,25 +1,80 @@
-import nodemailer from 'nodemailer';
+/**
+ * Service email — Resend (API HTTP)
+ *
+ * On utilise l'API HTTP de Resend (https://api.resend.com/emails) plutôt que
+ * SMTP : pas de connexion TCP persistante, pas de timeout `ETIMEDOUT` sur le
+ * port 465/587, et une requête HTTP courte protégée par un AbortController.
+ * Si `RESEND_API_KEY` est absent, l'envoi est un no-op (log) : l'application
+ * ne plante jamais et ne bloque jamais une requête à cause de l'email.
+ *
+ * Compétences CDA : consommer un service tiers (API REST), gérer les erreurs
+ * et les délais réseau, éco-conception (pas de connexion inutile maintenue).
+ */
+
 import path from 'path';
 import fs from 'fs';
 
-const smtpPort = parseInt(process.env.SMTP_PORT || '465');
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.resend.com',
-  port: smtpPort,
-  secure: smtpPort === 465,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_ENDPOINT = 'https://api.resend.com/emails';
+const FROM = process.env.EMAIL_FROM || 'Lama Linked.In <noreply@lamalinked.in>';
+const REPLY_TO = process.env.EMAIL_REPLY_TO || 'heycestlelama@gmail.com';
+const SEND_TIMEOUT_MS = 10_000;
 
-const FROM = 'Lama Linked.In <noreply@lamalinked.in>';
-const REPLY_TO = 'heycestlelama@gmail.com';
+interface EmailAttachment {
+  filename: string;
+  /** Contenu encodé en base64 (format attendu par Resend). */
+  content: string;
+}
+
+interface SendEmailOptions {
+  to: string;
+  subject: string;
+  html: string;
+  attachments?: EmailAttachment[];
+}
+
+/**
+ * Envoie un email via l'API Resend. No-op si aucune clé n'est configurée.
+ * Lance une erreur en cas de réponse non-2xx (le routeur appelant décide
+ * s'il l'ignore ou la propage).
+ */
+async function sendEmail(opts: SendEmailOptions): Promise<void> {
+  if (!RESEND_API_KEY) {
+    console.warn(`[Email] RESEND_API_KEY absente — "${opts.subject}" non envoyé (no-op).`);
+    return;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
+  try {
+    const res = await fetch(RESEND_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: FROM,
+        reply_to: REPLY_TO,
+        to: opts.to,
+        subject: opts.subject,
+        html: opts.html,
+        ...(opts.attachments?.length ? { attachments: opts.attachments } : {}),
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`Resend ${res.status}: ${body}`);
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<void> {
-  await transporter.sendMail({
-    from: FROM,
-    replyTo: REPLY_TO,
+  await sendEmail({
     to,
     subject: 'Bienvenue sur Lama Linked.In !',
     html: `
@@ -51,9 +106,7 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<void> 
 }
 
 export async function sendPaymentSuccessEmail(to: string, name: string): Promise<void> {
-  await transporter.sendMail({
-    from: FROM,
-    replyTo: REPLY_TO,
+  await sendEmail({
     to,
     subject: 'Paiement confirmé — Lama Linked.In Premium',
     html: `
@@ -88,21 +141,17 @@ export async function sendPaymentSuccessEmail(to: string, name: string): Promise
 export async function sendEbookEmail(to: string, firstName: string): Promise<void> {
   const logoUrl = 'https://raw.githubusercontent.com/IDONTSHOWSYFER/LamaLinkedIn/main/apps/extension/src/assets/icons/logo.png';
 
-  // Resolve ebook PDF path relative to project root
+  // PDF résolu relativement à la racine du process (apps/api).
   const ebookPath = path.resolve(process.cwd(), 'public/ebook/playbook_linkedin.pdf');
-
-  const attachments: nodemailer.SendMailOptions['attachments'] = [];
+  let attachments: EmailAttachment[] | undefined;
   if (fs.existsSync(ebookPath)) {
-    attachments.push({
+    attachments = [{
       filename: 'Playbook_LinkedIn_LamaLinkedIn.pdf',
-      path: ebookPath,
-      contentType: 'application/pdf',
-    });
+      content: fs.readFileSync(ebookPath).toString('base64'),
+    }];
   }
 
-  await transporter.sendMail({
-    from: FROM,
-    replyTo: REPLY_TO,
+  await sendEmail({
     to,
     subject: 'Votre ebook LinkedIn est prêt ! 📥',
     attachments,
@@ -218,9 +267,7 @@ export async function sendEbookEmail(to: string, firstName: string): Promise<voi
 
 export async function sendPasswordResetEmail(to: string, resetToken: string): Promise<void> {
   const resetUrl = `${process.env.FRONTEND_URL || 'https://lamalinked.in'}/reset-password?token=${resetToken}`;
-  await transporter.sendMail({
-    from: FROM,
-    replyTo: REPLY_TO,
+  await sendEmail({
     to,
     subject: 'Réinitialisation de mot de passe — Lama Linked.In',
     html: `

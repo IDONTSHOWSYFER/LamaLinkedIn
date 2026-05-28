@@ -1,10 +1,16 @@
 import { Router, type Router as RouterType, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { prisma } from '../db/client.js';
 import { authMiddleware, signToken, AuthRequest } from '../middleware/auth.js';
 import { rateLimiter } from '../middleware/rateLimiter.js';
-import { sendWelcomeEmail } from '../services/email.js';
+import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.js';
+
+/** Hash SHA-256 d'un token (on ne stocke jamais le token brut en base). */
+function hashToken(raw: string): string {
+  return crypto.createHash('sha256').update(raw).digest('hex');
+}
 
 export const authRouter: RouterType = Router();
 
@@ -21,6 +27,13 @@ const registerLimiter = rateLimiter({
   windowSeconds: 300,
   prefix: 'rl:register',
   message: 'Trop de créations de compte. Réessayez dans 5 minutes.',
+});
+
+const forgotLimiter = rateLimiter({
+  maxRequests: 3,
+  windowSeconds: 300,
+  prefix: 'rl:forgot',
+  message: 'Trop de demandes. Réessayez dans quelques minutes.',
 });
 
 const registerSchema = z.object({
@@ -42,6 +55,15 @@ const updateProfileSchema = z.object({
 const changePasswordSchema = z.object({
   currentPassword: z.string(),
   newPassword: z.string().min(6),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(6),
 });
 
 authRouter.post('/register', registerLimiter, async (req: Request, res: Response): Promise<void> => {
@@ -191,6 +213,73 @@ authRouter.put('/password', authMiddleware, async (req: AuthRequest, res: Respon
       return;
     }
     console.error('Change password error:', err);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Demande de réinitialisation : envoie un email avec un lien si le compte existe.
+// Réponse toujours générique (anti-énumération de comptes — OWASP).
+authRouter.post('/forgot-password', forgotLimiter, async (req: Request, res: Response): Promise<void> => {
+  const genericMessage = 'Si un compte existe pour cette adresse, un email de réinitialisation a été envoyé.';
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (user) {
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 heure
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { resetToken: hashToken(rawToken), resetTokenExpiry: expiry },
+      });
+
+      // Envoi non-bloquant : la réponse ne doit jamais dépendre de l'email.
+      sendPasswordResetEmail(email, rawToken).catch((e) => console.error('Reset email error:', e));
+    }
+
+    res.json({ message: genericMessage });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ message: 'Données invalides', errors: err.errors });
+      return;
+    }
+    console.error('Forgot password error:', err);
+    // Même en cas d'erreur interne, on reste générique.
+    res.json({ message: genericMessage });
+  }
+});
+
+// Réinitialisation effective avec le token reçu par email.
+authRouter.post('/reset-password', forgotLimiter, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body);
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: hashToken(token),
+        resetTokenExpiry: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      res.status(400).json({ message: 'Lien invalide ou expiré. Refaites une demande.' });
+      return;
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed, resetToken: null, resetTokenExpiry: null },
+    });
+
+    res.json({ message: 'Mot de passe réinitialisé. Vous pouvez vous connecter.' });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ message: 'Données invalides', errors: err.errors });
+      return;
+    }
+    console.error('Reset password error:', err);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
