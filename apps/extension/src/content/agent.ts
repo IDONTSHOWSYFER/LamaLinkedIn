@@ -1,6 +1,18 @@
 import { UserConfig } from '@/types';
 import { getSession, setSession, getVisitedIds, addVisitedId } from '@/lib/storage';
 import { log, warn, error } from '@/lib/log';
+import { contextAlive, registerTeardown, safeSendMessage } from './context';
+import {
+  findVisiblePosts,
+  findLikeButton,
+  isAlreadyLiked,
+  findCommentButton,
+  findEditor,
+  findSendButton,
+  getPostId,
+  getAuthorName,
+  recordSelectorHealth,
+} from './selectors';
 
 type ActionCallback = (type: 'like' | 'comment', postId: string, content: string, authorName: string) => void;
 
@@ -135,215 +147,7 @@ function removeCursor() {
   cursorEl = null;
 }
 
-// ========== DOM Selectors — multi-strategy (Ember + React LinkedIn) ==========
-// LinkedIn ships two renderers: legacy Ember (artdeco/ql-editor) and new React
-// (tiptap/ProseMirror, role="listitem", componentkey). We detect BOTH in
-// parallel so the extension works regardless of which version the user gets.
-
-function hasLikeButton(el: Element): boolean {
-  return Array.from(el.querySelectorAll('button')).some(b => {
-    const label = b.getAttribute('aria-label') || '';
-    const text = b.textContent?.trim() || '';
-    return /réaction|réagir|j.aime|like/i.test(label)
-      || /^j.aime$/i.test(text)
-      || b.classList.contains('react-button__trigger');
-  });
-}
-
-const getPosts = () => {
-  const posts = new Set<Element>();
-
-  for (const sel of [
-    'div.feed-shared-update-v2',
-    'div.update-components-update-v2',
-    'article[data-urn]',
-  ]) {
-    document.querySelectorAll(sel).forEach(p => posts.add(p));
-  }
-
-  document.querySelectorAll('div[role="listitem"]').forEach(p => {
-    if (hasLikeButton(p)) posts.add(p);
-  });
-
-  return Array.from(posts).filter(p => {
-    const r = p.getBoundingClientRect();
-    return r.top < innerHeight + 500 && r.bottom > -200;
-  });
-};
-
-function isInsideCommentSection(el: Element): boolean {
-  // Old LinkedIn
-  if (el.closest('.comments-comment-entity, .comments-comment-social-bar, .comments-comments-list')) return true;
-  const label = el.getAttribute('aria-label') || '';
-  if (/au commentaire/i.test(label) || /comment.*like/i.test(label)) return true;
-  // New LinkedIn: componentkey with reply
-  const ck = el.getAttribute('componentkey') || '';
-  const parentCk = el.closest('[componentkey]')?.getAttribute('componentkey') || '';
-  if (/reply|commentReply/i.test(ck) || /reply|commentReply/i.test(parentCk)) return true;
-  return false;
-}
-
-function findLikeButton(p: Element): HTMLButtonElement | null {
-  // Priority 1: class-based (Ember) — most reliable, won't false-positive
-  const classBtn = p.querySelector('button.react-button__trigger') as HTMLButtonElement | null;
-  if (classBtn && !isInsideCommentSection(classBtn)) return classBtn;
-
-  // Priority 2: scan all buttons by aria-label / text
-  const allButtons = p.querySelectorAll('button');
-  for (const btn of allButtons) {
-    if (isInsideCommentSection(btn)) continue;
-    const label = btn.getAttribute('aria-label') || '';
-    const text = btn.textContent?.trim() || '';
-    if (/réaction|réagir|j.aime/i.test(label)) return btn;
-    if (/^j.aime$/i.test(text)) return btn;
-    if (/^like$/i.test(text) || /\blike\b/i.test(label)) return btn;
-  }
-  return null;
-}
-
-function isLiked(b: HTMLButtonElement | null): boolean {
-  if (!b) return true;
-  // Ember: explicit pressed state
-  if (b.getAttribute('aria-pressed') === 'true') return true;
-  if (b.classList.contains('react-button--active')) return true;
-  // Ember: parent span gets an active class
-  const parentSpan = b.closest('.reactions-react-button');
-  if (parentSpan?.querySelector('.react-button--active')) return true;
-  // React: "aucune réaction" = not liked; "réaction" without "aucune" = liked
-  const label = b.getAttribute('aria-label') || '';
-  if (/aucune/i.test(label)) return false;
-  if (/réaction/i.test(label)) return true;
-  // SVG fill colour (both renderers may use this)
-  const circle = b.querySelector('svg circle[fill="#378fe9"], svg circle[fill="#0a66c2"]');
-  if (circle) return true;
-  return false;
-}
-
-function findCommentButton(p: Element): HTMLButtonElement | null {
-  // Priority 1: Ember class
-  const classBtn = p.querySelector('button.comment-button') as HTMLButtonElement | null;
-  if (classBtn && !isInsideCommentSection(classBtn)) return classBtn;
-
-  // Priority 2: aria-label
-  const ariaBtn = p.querySelector('button[aria-label="Commenter" i]') as HTMLButtonElement | null;
-  if (ariaBtn && !isInsideCommentSection(ariaBtn)) return ariaBtn;
-
-  // Priority 3: text scan (exclude submit buttons)
-  const allButtons = p.querySelectorAll('button');
-  for (const btn of allButtons) {
-    if (isInsideCommentSection(btn)) continue;
-    const text = btn.textContent?.trim() || '';
-    const ck = btn.getAttribute('componentkey') || '';
-    if (/^commenter$/i.test(text) && !ck.includes('commentButtonSection')) {
-      return btn;
-    }
-  }
-  return null;
-}
-
-function findEditor(p: Element): HTMLElement | null {
-  // Ember: Quill editor
-  const qlEd = p.querySelector('.ql-editor[contenteditable="true"]') as HTMLElement;
-  if (qlEd) return qlEd;
-  // React: tiptap ProseMirror
-  const tiptap = p.querySelector('.tiptap.ProseMirror[contenteditable="true"]') as HTMLElement;
-  if (tiptap) return tiptap;
-  // Generic: any contenteditable related to comments
-  const ariaEd = p.querySelector(
-    '[contenteditable="true"][aria-label*="commentaire" i], ' +
-    '[contenteditable="true"][aria-label*="comment" i], ' +
-    '[contenteditable="true"][role="textbox"]'
-  ) as HTMLElement;
-  if (ariaEd) return ariaEd;
-  return null;
-}
-
-function findSendButton(p: Element): HTMLButtonElement | null {
-  // Ember: dedicated submit class
-  let btn = p.querySelector('button.comments-comment-box__submit-button--cr') as HTMLButtonElement | null;
-  if (btn) return btn;
-  // Ember: primary button inside the comment form
-  btn = p.querySelector('form.comments-comment-box__form button.artdeco-button--primary') as HTMLButtonElement | null;
-  if (btn) return btn;
-
-  // React: componentkey-based
-  const allButtons = p.querySelectorAll('button');
-  for (const b of allButtons) {
-    const ck = b.getAttribute('componentkey') || '';
-    if (ck.includes('commentButtonSection')) return b;
-  }
-
-  // Generic: text/label scan inside a comment area
-  for (const b of allButtons) {
-    const label = b.getAttribute('aria-label') || '';
-    const text = b.textContent?.trim() || '';
-    if (/publier|poster/i.test(label) || /publier|poster/i.test(text)) {
-      const inCommentArea = b.closest(
-        '.comments-comment-box, .comments-comment-box--cr, ' +
-        '[componentkey*="commentBox" i]'
-      );
-      if (inCommentArea) return b;
-    }
-  }
-  return null;
-}
-
-function getPostId(p: Element): string {
-  const cached = p.getAttribute('data-lbp-id');
-  if (cached) return cached;
-
-  let id: string | null = null;
-
-  // Ember: data-urn on the post or a parent article
-  id = p.getAttribute('data-urn') || p.getAttribute('data-chameleon-result-urn') || null;
-  if (!id) {
-    const art = p.querySelector('article[data-urn]') || p.closest('article[data-urn]');
-    if (art) id = art.getAttribute('data-urn');
-  }
-
-  // Ember: unique ember ID on like button or the post itself
-  if (!id) {
-    const emberBtn = p.querySelector('button.react-button__trigger[id]');
-    if (emberBtn) id = `ember-${emberBtn.id}`;
-  }
-
-  // React: componentkey
-  if (!id) id = p.getAttribute('componentkey');
-  if (!id) {
-    const innerCk = p.querySelector('[componentkey*="commentBox"]')?.getAttribute('componentkey');
-    if (innerCk) id = innerCk;
-  }
-
-  if (!id) {
-    id = `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  p.setAttribute('data-lbp-id', id);
-  return id;
-}
-
-function getAuthorName(p: Element): string {
-  // Ember: structured selectors
-  for (const sel of [
-    '.update-components-actor__name span',
-    '.feed-shared-actor__name span',
-    'span[dir="ltr"] span[aria-hidden="true"]',
-    'a[data-test-app-aware-link] span',
-  ]) {
-    const el = p.querySelector(sel);
-    const text = el?.textContent?.trim();
-    if (text && text.length > 1 && text.length < 80) return text;
-  }
-  // React: first meaningful <p> tag
-  const allPs = p.querySelectorAll('p');
-  for (const para of allPs) {
-    const text = para.textContent?.trim();
-    if (!text || text.length < 2 || text.length > 60) continue;
-    if (/abonné|follower|^\d|commentaire|réaction|republication|^http|^#|^…|Ajouter un|Post du/i.test(text)) continue;
-    return text;
-  }
-  return 'Utilisateur';
-}
+// All LinkedIn DOM lookups live in ./selectors (shared with assist mode).
 
 // ========== Human Typing ==========
 async function typeHuman(el: HTMLElement, text: string, level: number, isRunning: () => boolean, isPaused: () => boolean): Promise<boolean> {
@@ -461,16 +265,20 @@ async function smoothScroll(level: number, isRunning: () => boolean, isPaused: (
     await sleep(jitter(80, level));
   }
 
-  // Phase 2: Smooth human-like scroll for ~1.5x viewport height
-  const dist = Math.max(900, window.innerHeight * 1.5) + Math.random() * 500;
-  const step = 6.0 + (level * 1.5);
-  const total = Math.floor(dist / step);
-  for (let i = 0; i < total; i++) {
+  // Phase 2: fluid, human-like scroll (~1.4x viewport). Small constant pixel
+  // steps at ~60fps read as smooth; the speed level only nudges the pace, and
+  // the first/last frames ease in and out so it never jerks.
+  const dist = Math.max(800, window.innerHeight * 1.4) + Math.random() * 300;
+  const ppf = [2.0, 2.8, 3.6, 4.6, 5.8, 7.2][clamp(level, 0, 5)];
+  const frames = Math.max(30, Math.floor(dist / ppf));
+  for (let i = 0; i < frames; i++) {
     if (!isRunning()) return;
     while (isPaused() && isRunning()) await sleep(120);
-    scrollBy(container, step + Math.random() * 4);
-    if (i % 40 === 0) await sleep(jitter(25, level));
-    await sleep(5 + Math.random() * 4);
+    let mul = 1;
+    if (i < 8) mul = (i + 1) / 8;
+    else if (i > frames - 8) mul = Math.max(0.25, (frames - i) / 8);
+    scrollBy(container, Math.max(1, ppf * mul + Math.random() * 0.6));
+    await sleep(16);
   }
 
   // Phase 3: Wait for LinkedIn to render new posts
@@ -500,16 +308,16 @@ async function aggressiveScroll(level: number, isRunning: () => boolean, isPause
 
   const container = getScrollContainer();
 
-  // Scroll rapidly 2-3 viewport heights
+  // Scroll briskly through 2.5 viewport heights to escape an empty stretch,
+  // but keep a steady ~60fps cadence so it still looks like a human flick.
   const dist = window.innerHeight * 2.5 + Math.random() * 500;
-  const step = 10 + level * 2;
-  const total = Math.floor(dist / step);
+  const ppf = 6 + level * 1.5;
+  const frames = Math.floor(dist / ppf);
 
-  for (let i = 0; i < total; i++) {
+  for (let i = 0; i < frames; i++) {
     if (!isRunning()) return;
-    scrollBy(container, step + Math.random() * 5);
-    if (i % 25 === 0) await sleep(jitter(15, level));
-    await sleep(4 + Math.random() * 3);
+    scrollBy(container, ppf + Math.random() * 1.5);
+    await sleep(14);
   }
 
   // Try clicking "Charger plus" — this is the KEY for LinkedIn 2025+
@@ -612,7 +420,7 @@ export async function agentMode(
 
     // LIKE
     const lb = findLikeButton(post);
-    if (lb && canLike && !isLiked(lb)) {
+    if (lb && canLike && !isAlreadyLiked(lb)) {
       await moveCursorTo(lb, level);
       await sleep(jitter(150, level));
       lb.click();
@@ -711,12 +519,11 @@ export async function agentMode(
     while (isRunning() && !cancelled && ctx.actions < ctx.actionsTarget && !done()) {
       while (isPaused() && isRunning() && !cancelled) await sleep(150);
       if (!isRunning() || cancelled) break;
+      if (!contextAlive()) break;
 
       const session = await getSession();
       if (session.dailyLikes >= 150 && session.dailyComments >= 50) {
-        try {
-          chrome.runtime.sendMessage({ type: 'LBP_NOTIFY', title: 'Lama Linked.In', message: 'Quotas journaliers atteints' });
-        } catch {}
+        safeSendMessage({ type: 'LBP_NOTIFY', title: 'Lama Linked.In', message: 'Quotas journaliers atteints' });
         break;
       }
 
@@ -724,7 +531,8 @@ export async function agentMode(
       scrollPaused = false;
       isTyping = false;
 
-      const posts = getPosts();
+      const posts = findVisiblePosts();
+      recordSelectorHealth(posts);
       const unvisited = posts.filter(p => {
         const pid = getPostId(p);
         return pid && !visitedIds.has(pid);
@@ -740,9 +548,7 @@ export async function agentMode(
         if (idleTries >= MAX_IDLE) {
           // Refresh the page to get new posts
           if (config.refreshAfterSession !== false) {
-            try {
-              chrome.runtime.sendMessage({ type: 'LBP_NOTIFY', title: 'Lama Linked.In', message: 'Flux vide, rechargement...', silent: true });
-            } catch {}
+            safeSendMessage({ type: 'LBP_NOTIFY', title: 'Lama Linked.In', message: 'Flux vide, rechargement...', silent: true });
             await setSession({ botState: 'running' });
             window.location.reload();
             return;
@@ -775,7 +581,7 @@ export async function agentMode(
       await sleep(jitter(600, level));
 
       // If we still see the same posts, do an extra scroll
-      const newPosts = getPosts();
+      const newPosts = findVisiblePosts();
       const newUnvisited = newPosts.filter(p => {
         const pid = getPostId(p);
         return pid && !visitedIds.has(pid);
@@ -788,26 +594,22 @@ export async function agentMode(
     }
 
     if (!cancelled && isRunning()) {
-      try {
-        chrome.runtime.sendMessage({
-          type: 'LBP_NOTIFY',
-          title: 'Lama Linked.In',
-          message: `Session terminée : ${ctx.likes} likes, ${ctx.comments} commentaires`,
-        });
-      } catch {}
+      safeSendMessage({
+        type: 'LBP_NOTIFY',
+        title: 'Lama Linked.In',
+        message: `Session terminée : ${ctx.likes} likes, ${ctx.comments} commentaires`,
+      });
 
       // Session complete — handle pause + refresh cycle
       if (config.sessionsPerDay > 1 && config.refreshAfterSession !== false) {
         const pauseMs = (config.pauseDurationMin || 5) * 60 * 1000;
         log(`Session complete. Pausing ${config.pauseDurationMin || 5}min before next session...`);
-        try {
-          chrome.runtime.sendMessage({
-            type: 'LBP_NOTIFY',
-            title: 'Lama Linked.In',
-            message: `Pause de ${config.pauseDurationMin || 5} minutes avant la prochaine session...`,
-            silent: true,
-          });
-        } catch {}
+        safeSendMessage({
+          type: 'LBP_NOTIFY',
+          title: 'Lama Linked.In',
+          message: `Pause de ${config.pauseDurationMin || 5} minutes avant la prochaine session...`,
+          silent: true,
+        });
         await sleep(pauseMs);
         if (isRunning() && !cancelled) {
           await setSession({ botState: 'running' });
@@ -820,8 +622,13 @@ export async function agentMode(
     }
   })();
 
-  return () => {
+  const teardown = () => {
     cancelled = true;
     removeCursor();
+  };
+  const unregister = registerTeardown(teardown);
+  return () => {
+    unregister();
+    teardown();
   };
 }

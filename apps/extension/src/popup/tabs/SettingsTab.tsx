@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Clock, Coffee, Target, Zap, Save, Upload, Crown, ExternalLink, User, CreditCard, BarChart3, BookOpen, Mail } from 'lucide-react';
+import { Clock, Target, Zap, Save, Upload, Crown, ExternalLink, User, CreditCard, BarChart3, BookOpen, Mail } from 'lucide-react';
 import { Button, Card, Slider, Toggle } from '@/components/core';
 import { useStore } from '../store';
 import { api } from '@/lib/api';
@@ -67,17 +67,6 @@ export function SettingsTab() {
           <p className="text-xs text-muted-foreground">Recommandé : 25-45 minutes</p>
         </div>
 
-        {/* Pause Duration */}
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Coffee className="w-4 h-4 text-accent" />
-            Durée des pauses
-          </label>
-          <Card padding="sm">
-            <Slider value={local.pauseDurationMin} onChange={v => update('pauseDurationMin', v)} min={5} max={30} unit=" min" label="" />
-          </Card>
-        </div>
-
         {/* Objectives */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -94,6 +83,14 @@ export function SettingsTab() {
           </div>
         </div>
 
+        {/* Assisted-mode note */}
+        {local.mode === 'assist' && (
+          <p className="text-xs text-muted-foreground">
+            En mode Assisté, l'extension surligne les posts à liker et propose des
+            suggestions de commentaires. Aucune action automatique ni pause : vous gardez la main.
+          </p>
+        )}
+
         {/* Agent-specific settings */}
         {local.mode === 'agent' && (
           <div className="space-y-2">
@@ -102,10 +99,16 @@ export function SettingsTab() {
               Réglages Agent
             </label>
             <Card padding="sm">
+              <Slider value={local.botSpeed} onChange={v => update('botSpeed', v)} min={1} max={5} label="Vitesse (1 lent · 5 rapide)" />
+            </Card>
+            <Card padding="sm">
               <Slider value={local.sessionsPerDay} onChange={v => update('sessionsPerDay', v)} min={1} max={10} label="Sessions / jour" />
             </Card>
             <Card padding="sm">
               <Slider value={local.totalResponsesMax} onChange={v => update('totalResponsesMax', v)} min={1} max={50} label="Actions max / session" />
+            </Card>
+            <Card padding="sm">
+              <Slider value={local.pauseDurationMin} onChange={v => update('pauseDurationMin', v)} min={1} max={30} unit=" min" label="Pause entre les sessions" />
             </Card>
             <Card padding="sm">
               <Toggle checked={local.refreshAfterSession} onCheckedChange={v => update('refreshAfterSession', v)} label="Rafraîchir le feed après session" />

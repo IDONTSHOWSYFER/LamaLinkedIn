@@ -7,7 +7,14 @@ const STORAGE_KEYS = {
   auth: 'lbp_auth',
   visitedIds: 'lbp_visitedIds',
   installId: 'lbp_installId',
+  selectorAlert: 'lbp_selector_alert',
 } as const;
+
+export interface SelectorAlert {
+  url: string;
+  postsSeen: number;
+  ts: number;
+}
 
 export async function getConfig(): Promise<UserConfig> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.config);
@@ -79,6 +86,19 @@ export async function getInstallId(): Promise<string> {
   const id = crypto.randomUUID();
   await chrome.storage.local.set({ [STORAGE_KEYS.installId]: id });
   return id;
+}
+
+export function setSelectorAlert(detail: SelectorAlert): void {
+  try {
+    chrome.storage.local.set({ [STORAGE_KEYS.selectorAlert]: detail });
+  } catch {
+    // Context may be gone — ignore.
+  }
+}
+
+export async function getSelectorAlert(): Promise<SelectorAlert | null> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.selectorAlert);
+  return result[STORAGE_KEYS.selectorAlert] || null;
 }
 
 export async function getAuth(): Promise<any | null> {

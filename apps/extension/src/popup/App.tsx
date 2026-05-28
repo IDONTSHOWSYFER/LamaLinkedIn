@@ -7,7 +7,8 @@ import { SettingsTab } from './tabs/SettingsTab';
 import { UpgradeTab } from './tabs/UpgradeTab';
 import { ModeToggle } from './components/ModeToggle';
 import { useStore } from './store';
-import { Play, BarChart3, FileText, Settings, Crown, Sparkles, Sun, Moon } from 'lucide-react';
+import { Play, BarChart3, FileText, Settings, Crown, Sun, Moon } from 'lucide-react';
+import logoImg from '@/assets/icons/logo.png';
 
 export function App() {
   const { session, config, init, activeTab, setActiveTab } = useStore();
@@ -35,7 +36,7 @@ export function App() {
     return (
       <div className="w-[380px] h-[600px] bg-background flex items-center justify-center">
         <div className="text-center">
-          <Sparkles className="w-8 h-8 text-primary mx-auto mb-3 animate-pulse" />
+          <img src={logoImg} alt="Lama Linked.In" className="w-10 h-10 mx-auto mb-3 animate-pulse object-contain" />
           <p className="text-sm text-muted-foreground">Chargement...</p>
         </div>
       </div>
@@ -56,7 +57,7 @@ export function App() {
       {/* Header with mode toggle */}
       <div className="px-4 pt-3 pb-2 bg-background-elevated border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
+          <img src={logoImg} alt="Lama Linked.In" className="w-5 h-5 object-contain" />
           <h1 className="text-sm font-bold text-foreground">Lama Linked.In</h1>
         </div>
         <div className="flex items-center gap-2">

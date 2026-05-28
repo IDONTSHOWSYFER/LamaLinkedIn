@@ -4,6 +4,7 @@ import { assistMode } from './assist';
 import { agentMode } from './agent';
 import { injectPanel, updatePanel, updatePanelTimer, updatePanelStatus, removePanel } from './panel';
 import { log, error } from '@/lib/log';
+import { contextAlive, registerTeardown } from './context';
 
 log('Content script loaded on', window.location.href);
 
@@ -14,6 +15,7 @@ let currentConfig: UserConfig | null = null;
 let assistCleanup: (() => void) | null = null;
 let agentCleanup: (() => void) | null = null;
 let sessionTimerHandle: number | null = null;
+let watchdogTeardown: (() => void) | null = null;
 
 async function start(mode: AppMode, reset: boolean) {
   if (running) return;
@@ -46,6 +48,18 @@ async function start(mode: AppMode, reset: boolean) {
     await setSession(sessionUpdate);
     injectPanel(mode, config.sessionDurationMin, stop);
 
+    // If Chrome tears down our context mid-session, stop cleanly instead of
+    // leaving the panel/timer running against a dead extension.
+    if (watchdogTeardown) watchdogTeardown();
+    watchdogTeardown = registerTeardown(() => {
+      running = false;
+      paused = false;
+      if (sessionTimerHandle) { clearTimeout(sessionTimerHandle); sessionTimerHandle = null; }
+      if (assistCleanup) { assistCleanup(); assistCleanup = null; }
+      if (agentCleanup) { agentCleanup(); agentCleanup = null; }
+      removePanel();
+    });
+
     try {
       chrome.runtime.sendMessage({ type: 'LBP_BADGE', text: 'ON', color: mode === 'agent' ? '#F4B183' : '#0A66C2' });
       chrome.runtime.sendMessage({ type: 'LBP_NOTIFY', title: 'Lama Linked.In', message: `${mode === 'agent' ? 'Agent' : 'Assisté'} démarré`, silent: true });
@@ -70,11 +84,12 @@ function startSessionTimer(config: UserConfig) {
 
   const durationMs = config.sessionDurationMin * 60 * 1000;
   sessionTimerHandle = window.setTimeout(async () => {
-    if (!running) return;
+    if (!running || !contextAlive()) return;
 
     const session = await getSession();
     const nextIndex = (session.sessionIndex || 1) + 1;
-    const total = config.sessionsPerDay;
+    // Assisté is always a single, manual session — no pause/resume cycling.
+    const total = currentMode === 'assist' ? 1 : config.sessionsPerDay;
 
     if (nextIndex <= total) {
       // Pause between sessions
@@ -101,7 +116,7 @@ function startSessionTimer(config: UserConfig) {
       // Wait for pause duration then start next session
       const pauseMs = config.pauseDurationMin * 60 * 1000;
       window.setTimeout(async () => {
-        if (!running) return;
+        if (!running || !contextAlive()) return;
         paused = false;
 
         await setSession({
@@ -177,6 +192,7 @@ async function onAction(type: 'like' | 'comment', postId: string, content: strin
 function stop() {
   running = false;
   paused = false;
+  if (watchdogTeardown) { watchdogTeardown(); watchdogTeardown = null; }
   if (sessionTimerHandle) { clearTimeout(sessionTimerHandle); sessionTimerHandle = null; }
   if (assistCleanup) { assistCleanup(); assistCleanup = null; }
   if (agentCleanup) { agentCleanup(); agentCleanup = null; }

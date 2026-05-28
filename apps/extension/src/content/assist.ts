@@ -1,234 +1,59 @@
 import { UserConfig } from '@/types';
+import { registerTeardown } from './context';
+import {
+  findAllPosts,
+  findPostContainer,
+  findLikeButton,
+  isAlreadyLiked,
+  findCommentButton,
+  findEditor,
+  getPostId,
+  getAuthorName,
+  isLikeButtonEl,
+  isCommentOpenButtonEl,
+  isSendButtonEl,
+  recordSelectorHealth,
+} from './selectors';
 
 type ActionCallback = (type: 'like' | 'comment', postId: string, content: string, authorName: string) => void;
 
 const SUGGESTIONS = [
   'Merci pour ce partage inspirant !',
-  'Excellent point de vue, je suis d\'accord.',
+  "Excellent point de vue, je suis d'accord.",
   'Super contenu, bravo !',
   'Belle analyse, merci pour la valeur ajoutée.',
   'Très pertinent, merci du partage !',
-  'J\'adore cette approche !',
+  "J'adore cette approche !",
   'Contenu de qualité comme d\'habitude !',
   'Merci pour cette perspective enrichissante.',
 ];
 
-// ========== DOM selectors — multi-strategy (Ember + React LinkedIn) ==========
-
-function hasLikeButton(el: Element): boolean {
-  return Array.from(el.querySelectorAll('button')).some(b => {
-    const label = b.getAttribute('aria-label') || '';
-    const text = b.textContent?.trim() || '';
-    return /réaction|réagir|j.aime|like/i.test(label)
-      || /^j.aime$/i.test(text)
-      || b.classList.contains('react-button__trigger');
-  });
-}
-
-function findPostContainer(el: Element): Element | null {
-  return el.closest(
-    'div.feed-shared-update-v2, div.update-components-update-v2, article[data-urn], div[role="listitem"]'
-  );
-}
-
-function findAllPosts(): Element[] {
-  const posts = new Set<Element>();
-
-  for (const sel of [
-    'div.feed-shared-update-v2',
-    'div.update-components-update-v2',
-    'article[data-urn]',
-  ]) {
-    document.querySelectorAll(sel).forEach(p => posts.add(p));
-  }
-
-  document.querySelectorAll('div[role="listitem"]').forEach(p => {
-    if (hasLikeButton(p)) posts.add(p);
-  });
-
-  return Array.from(posts);
-}
-
-function findLikeButton(post: Element): HTMLButtonElement | null {
-  const classBtn = post.querySelector('button.react-button__trigger') as HTMLButtonElement | null;
-  if (classBtn && !isInsideCommentSection(classBtn)) return classBtn;
-
-  const allButtons = post.querySelectorAll('button');
-  for (const btn of allButtons) {
-    if (isInsideCommentSection(btn)) continue;
-    const label = btn.getAttribute('aria-label') || '';
-    const text = btn.textContent?.trim() || '';
-    if (/réaction|réagir|j.aime/i.test(label)) return btn;
-    if (/^j.aime$/i.test(text)) return btn;
-    if (/^like$/i.test(text) || /\blike\b/i.test(label)) return btn;
-  }
-  return null;
-}
-
-/** Check if a button is inside a comments section (not post-level) */
-function isInsideCommentSection(el: Element): boolean {
-  // Old LinkedIn class-based detection
-  if (el.closest('.comments-comment-entity, .comments-comment-social-bar, .comments-comments-list')) return true;
-
-  // Check aria-label for comment-specific patterns
-  const label = el.getAttribute('aria-label') || '';
-  if (/au commentaire/i.test(label) || /comment.*like/i.test(label)) return true;
-
-  // New LinkedIn: check componentkey patterns
-  // "commentButtonSection" = the submit button (OK, not a comment-section button)
-  // We only want to exclude buttons inside reply threads
-  const ck = el.getAttribute('componentkey') || '';
-  const parentCk = el.closest('[componentkey]')?.getAttribute('componentkey') || '';
-
-  // Skip if inside a reply/comment entity
-  if (/reply|commentReply/i.test(ck) || /reply|commentReply/i.test(parentCk)) return true;
-
-  return false;
-}
-
-function isAlreadyLiked(btn: HTMLButtonElement): boolean {
-  if (btn.getAttribute('aria-pressed') === 'true') return true;
-  if (btn.classList.contains('react-button--active')) return true;
-  const parentSpan = btn.closest('.reactions-react-button');
-  if (parentSpan?.querySelector('.react-button--active')) return true;
-  const label = btn.getAttribute('aria-label') || '';
-  if (/aucune/i.test(label)) return false;
-  if (/réaction/i.test(label)) return true;
-  const circle = btn.querySelector('svg circle[fill="#378fe9"], svg circle[fill="#0a66c2"]');
-  if (circle) return true;
-  return false;
-}
-
-function findCommentButton(post: Element): HTMLButtonElement | null {
-  const classBtn = post.querySelector('button.comment-button') as HTMLButtonElement | null;
-  if (classBtn && !isInsideCommentSection(classBtn)) return classBtn;
-
-  const ariaBtn = post.querySelector('button[aria-label="Commenter" i]') as HTMLButtonElement | null;
-  if (ariaBtn && !isInsideCommentSection(ariaBtn)) return ariaBtn;
-
-  const allButtons = post.querySelectorAll('button');
-  for (const btn of allButtons) {
-    if (isInsideCommentSection(btn)) continue;
-    const text = btn.textContent?.trim() || '';
-    const ck = btn.getAttribute('componentkey') || '';
-    if (/^commenter$/i.test(text) && !ck.includes('commentButtonSection')) {
-      return btn;
-    }
-  }
-  return null;
-}
-
-function findEditor(post: Element): HTMLElement | null {
-  const qlEd = post.querySelector('.ql-editor[contenteditable="true"]') as HTMLElement;
-  if (qlEd) return qlEd;
-  const tiptap = post.querySelector('.tiptap.ProseMirror[contenteditable="true"]') as HTMLElement;
-  if (tiptap) return tiptap;
-  const ariaEd = post.querySelector(
-    '[contenteditable="true"][aria-label*="commentaire" i], ' +
-    '[contenteditable="true"][aria-label*="comment" i], ' +
-    '[contenteditable="true"][role="textbox"]'
-  ) as HTMLElement;
-  if (ariaEd) return ariaEd;
-  return null;
-}
-
-function findSendButton(post: Element): HTMLButtonElement | null {
-  let btn = post.querySelector('button.comments-comment-box__submit-button--cr') as HTMLButtonElement | null;
-  if (btn) return btn;
-  btn = post.querySelector('form.comments-comment-box__form button.artdeco-button--primary') as HTMLButtonElement | null;
-  if (btn) return btn;
-
-  const allButtons = post.querySelectorAll('button');
-  for (const b of allButtons) {
-    const ck = b.getAttribute('componentkey') || '';
-    if (ck.includes('commentButtonSection')) return b;
-  }
-  for (const b of allButtons) {
-    const label = b.getAttribute('aria-label') || '';
-    const text = b.textContent?.trim() || '';
-    if (/publier|poster/i.test(label) || /publier|poster/i.test(text)) {
-      const inCommentArea = b.closest(
-        '.comments-comment-box, .comments-comment-box--cr, [componentkey*="commentBox" i]'
-      );
-      if (inCommentArea) return b;
-    }
-  }
-  return null;
-}
-
-function getPostId(post: Element): string {
-  const cached = post.getAttribute('data-lbp-id');
-  if (cached) return cached;
-
-  let id: string | null = null;
-
-  id = post.getAttribute('data-urn') || post.getAttribute('data-chameleon-result-urn') || null;
-  if (!id) {
-    const art = post.querySelector('article[data-urn]') || post.closest('article[data-urn]');
-    if (art) id = art.getAttribute('data-urn');
-  }
-  if (!id) {
-    const emberBtn = post.querySelector('button.react-button__trigger[id]');
-    if (emberBtn) id = `ember-${emberBtn.id}`;
-  }
-  if (!id) id = post.getAttribute('componentkey');
-  if (!id) {
-    const innerCk = post.querySelector('[componentkey*="commentBox"]')?.getAttribute('componentkey');
-    if (innerCk) id = innerCk;
-  }
-  if (!id) {
-    id = `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  post.setAttribute('data-lbp-id', id);
-  return id;
-}
-
-function getAuthorName(post: Element): string {
-  for (const sel of [
-    '.update-components-actor__name span',
-    '.feed-shared-actor__name span',
-    'span[dir="ltr"] span[aria-hidden="true"]',
-    'a[data-test-app-aware-link] span',
-  ]) {
-    const el = post.querySelector(sel);
-    const text = el?.textContent?.trim();
-    if (text && text.length > 1 && text.length < 80) return text;
-  }
-  const allPs = post.querySelectorAll('p');
-  for (const p of allPs) {
-    const text = p.textContent?.trim();
-    if (!text || text.length < 2 || text.length > 60) continue;
-    if (/abonné|follower|^\d|commentaire|réaction|republication|^http|^#|^…|Ajouter un/i.test(text)) continue;
-    return text;
-  }
-  return 'Utilisateur';
-}
-
 export function assistMode(
-  config: UserConfig,
+  _config: UserConfig,
   isRunning: () => boolean,
   isPaused: () => boolean,
   onAction: ActionCallback
 ): () => void {
   const HIGHLIGHT_CLASS = 'lbp-highlight';
   const SUGGESTION_CLASS = 'lbp-suggestion-bar';
-  const PROCESSED_ATTR = 'data-lbp-processed';
+  const SUGGESTION_DONE_ATTR = 'data-lbp-suggested';
 
   const style = document.createElement('style');
   style.id = 'lbp-assist-styles';
   style.textContent = `
     .${HIGHLIGHT_CLASS} {
-      background: rgba(10, 102, 194, 0.08) !important;
-      box-shadow: inset 0 0 0 2px rgba(10, 102, 194, 0.4) !important;
+      position: relative !important;
       border-radius: 8px !important;
-      animation: lbp-pulse 2s ease-in-out infinite !important;
+      box-shadow: 0 0 0 2px rgba(10, 102, 194, 0.9), 0 0 10px 2px rgba(10, 102, 194, 0.45) !important;
+      animation: lbp-pulse 1.6s ease-in-out infinite !important;
     }
     @keyframes lbp-pulse {
-      0%, 100% { box-shadow: inset 0 0 0 2px rgba(10, 102, 194, 0.4); }
-      50% { box-shadow: inset 0 0 0 2px rgba(55, 143, 233, 0.6); }
+      0%, 100% { box-shadow: 0 0 0 2px rgba(10, 102, 194, 0.9), 0 0 10px 2px rgba(10, 102, 194, 0.35); }
+      50% { box-shadow: 0 0 0 3px rgba(55, 143, 233, 1), 0 0 16px 4px rgba(55, 143, 233, 0.55); }
     }
     .${SUGGESTION_CLASS} {
+      display: block;
+      width: 100%;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 10px;
@@ -299,8 +124,10 @@ export function assistMode(
     if (!ed) return;
     ed.focus();
     const sel = window.getSelection();
-    if (sel) { sel.selectAllChildren(ed); sel.deleteFromDocument(); }
-
+    if (sel) {
+      sel.selectAllChildren(ed);
+      sel.deleteFromDocument();
+    }
     if (ed.classList.contains('ql-editor')) {
       document.execCommand('insertText', false, text);
       if (!ed.textContent?.trim()) {
@@ -310,9 +137,7 @@ export function assistMode(
     } else {
       const dt = new DataTransfer();
       dt.setData('text/plain', text);
-      ed.dispatchEvent(new ClipboardEvent('paste', {
-        clipboardData: dt, bubbles: true, cancelable: true,
-      }));
+      ed.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
     }
   }
 
@@ -320,7 +145,7 @@ export function assistMode(
     const shuffled = [...SUGGESTIONS].sort(() => Math.random() - 0.5).slice(0, 4);
     const list = bar.querySelector('.lbp-suggestion-list')!;
     list.innerHTML = '';
-    shuffled.forEach(s => {
+    shuffled.forEach((s) => {
       const chip = document.createElement('span');
       chip.className = 'lbp-suggestion-chip';
       chip.textContent = s;
@@ -343,153 +168,150 @@ export function assistMode(
   }
 
   function injectSuggestions(post: Element) {
-    // Already injected?
     if (post.querySelector(`.${SUGGESTION_CLASS}`)) return;
 
     const bar = document.createElement('div');
     bar.className = SUGGESTION_CLASS;
     bar.innerHTML = `
       <div class="lbp-suggestion-header">
-        <span class="lbp-suggestion-title">\u2728 Suggestions</span>
-        <button class="lbp-regen-btn">\u21BB Autres</button>
+        <span class="lbp-suggestion-title">✨ Suggestions</span>
+        <button class="lbp-regen-btn">↻ Autres</button>
       </div>
       <div class="lbp-suggestion-list"></div>
     `;
-
-    // Build initial chips
     buildSuggestionChips(post, bar);
-
-    // Regenerate button
     bar.querySelector('.lbp-regen-btn')!.addEventListener('click', (e) => {
       e.stopPropagation();
       buildSuggestionChips(post, bar);
     });
 
-    // Ember: insert after the comment form
-    const commentForm = post.querySelector('form.comments-comment-box__form');
-    if (commentForm) {
-      commentForm.parentElement?.insertBefore(bar, commentForm.nextSibling);
-      return;
-    }
+    // Drop the bar on its own full-width line *below* the whole comment box.
+    // If the anchor lives in a horizontal flex row, a plain sibling insert
+    // would squeeze it in beside the editor (and shove the "Commenter" button
+    // out of the box), so we let the row wrap and force the bar to span 100%.
+    const placeBar = (anchor: Element) => {
+      anchor.insertAdjacentElement('afterend', bar);
+      const parent = bar.parentElement;
+      if (parent && getComputedStyle(parent).display.includes('flex')) {
+        parent.style.flexWrap = 'wrap';
+        bar.style.flexBasis = '100%';
+      }
+    };
 
-    // Ember: insert after the comment box wrapper
-    const commentBox = post.querySelector('.comments-comment-box, .comments-comment-box--cr');
+    // Ember renderer: anchor on the outer box so the bar lands under the
+    // editor AND its toolbar (emoji/image/Commenter), never between them.
+    const commentBox = post.querySelector('.comments-comment-box--cr, .comments-comment-box');
     if (commentBox) {
-      commentBox.parentElement?.insertBefore(bar, commentBox.nextSibling);
+      placeBar(commentBox);
       return;
     }
-
-    // React: insert after componentkey-based submit section
-    const submitSection = post.querySelector('div[componentkey*="commentButtonSection" i]');
-    if (submitSection) {
-      submitSection.parentElement?.insertBefore(bar, submitSection.nextSibling);
+    // React/tiptap renderer.
+    const reactWrapper = post.querySelector('[data-testid="ui-core-tiptap-text-editor-wrapper"]');
+    if (reactWrapper) {
+      placeBar(reactWrapper.closest('[componentkey*="commentBox" i]') || reactWrapper.parentElement || reactWrapper);
       return;
     }
-
-    // React: insert after componentkey-based comment box
     const reactBox = post.querySelector('[componentkey*="commentBox" i]');
     if (reactBox) {
-      const wrapper = reactBox.closest('[data-testid="ui-core-tiptap-text-editor-wrapper"]')?.parentElement
-        || reactBox.parentElement;
-      if (wrapper?.parentElement) {
-        wrapper.parentElement.insertBefore(bar, wrapper.nextSibling);
-        return;
-      }
+      placeBar(reactBox);
+      return;
     }
-
+    const commentForm = post.querySelector('form.comments-comment-box__form');
+    if (commentForm) {
+      placeBar(commentForm);
+      return;
+    }
     post.appendChild(bar);
   }
 
-  function watchCommentSends(post: Element) {
-    const handler = (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (!target) return;
+  // ---- Delegated click handling (survives LinkedIn React re-renders) ----
+  // A single capture-phase listener sees every click before LinkedIn does, so
+  // we can attribute likes/comments to the right post even when the button
+  // elements are swapped out from under us on re-render.
+  function onDocClick(e: Event) {
+    if (!isRunning() || isPaused()) return;
+    const target = e.target as Element | null;
+    const btn = target?.closest?.('button');
+    if (!btn) return;
+    const post = findPostContainer(btn);
+    if (!post) return;
 
-      // Find the send button being clicked
-      const sendBtn = target.closest('button');
-      if (!sendBtn) return;
-
-      const ck = sendBtn.getAttribute('componentkey') || '';
-      const label = sendBtn.getAttribute('aria-label') || '';
-      const text = sendBtn.textContent?.trim() || '';
-
-      // New LinkedIn: submit button has "commentButtonSection" in componentkey
-      const isNewSend = ck.includes('commentButtonSection');
-
-      // Old LinkedIn: "publier", "envoyer", "poster"
-      const isOldSend = /publier|envoyer|poster|submit|send/i.test(label) ||
-                        /publier|envoyer|poster/i.test(text) ||
-                        sendBtn.matches('button.comments-comment-box__submit-button--cr, form.comments-comment-box__form button.artdeco-button--primary');
-
-      if (!isNewSend && !isOldSend) return;
-
-      // Make sure it belongs to this post
-      const postContainer = findPostContainer(sendBtn);
-      if (postContainer !== post) return;
-
-      // Get the editor text
+    // Order matters: submit is the most specific, then the comment-open
+    // button, then the like toggle (least specific text match).
+    if (isSendButtonEl(btn)) {
       const ed = findEditor(post);
       const commentText = ed?.textContent?.trim() || '';
-      if (commentText) {
-        const postId = getPostId(post);
-        onAction('comment', postId, commentText, getAuthorName(post));
+      if (commentText && commentText !== 'Ajouter un commentaire…') {
+        onAction('comment', getPostId(post), commentText, getAuthorName(post));
       }
-    };
-    post.addEventListener('click', handler, { capture: true });
-    return handler;
-  }
-
-  const commentHandlers: Array<{ post: Element; handler: (e: Event) => void }> = [];
-
-  function processPost(post: Element) {
-    if (post.getAttribute(PROCESSED_ATTR)) return;
-    post.setAttribute(PROCESSED_ATTR, '1');
-
-    // Find the like button
-    const likeBtn = findLikeButton(post);
-
-    if (likeBtn && !isAlreadyLiked(likeBtn)) {
-      likeBtn.classList.add(HIGHLIGHT_CLASS);
-
-      likeBtn.addEventListener('click', () => {
-        const postId = getPostId(post);
-        onAction('like', postId, 'Like', getAuthorName(post));
-        likeBtn.classList.remove(HIGHLIGHT_CLASS);
-        // Show suggestions after like — first open comment box, then show suggestions
-        const commentBtn = findCommentButton(post);
-        if (commentBtn) {
-          commentBtn.click();
-        }
-        setTimeout(() => injectSuggestions(post), 800);
-      }, { once: true, capture: true });
+      return;
     }
 
-    // Watch for manual comment submissions
-    const handler = watchCommentSends(post);
-    commentHandlers.push({ post, handler });
+    if (isCommentOpenButtonEl(btn)) {
+      // The editor mounts asynchronously — show templates once it's there.
+      setTimeout(() => injectSuggestions(post), 600);
+      return;
+    }
+
+    if (isLikeButtonEl(btn)) {
+      const likeBtn = btn as HTMLButtonElement;
+      // Capture phase = pre-toggle state. "Not liked yet" means this click likes.
+      if (!isAlreadyLiked(likeBtn)) {
+        onAction('like', getPostId(post), 'Like', getAuthorName(post));
+        likeBtn.classList.remove(HIGHLIGHT_CLASS);
+        const commentBtn = findCommentButton(post);
+        if (commentBtn) commentBtn.click();
+        setTimeout(() => injectSuggestions(post), 800);
+      } else {
+        likeBtn.classList.remove(HIGHLIGHT_CLASS);
+      }
+    }
   }
 
-  const observer = new MutationObserver(() => {
-    if (!isRunning() || isPaused()) return;
-    scan();
-  });
+  document.addEventListener('click', onDocClick, true);
 
-  function scan() {
+  // ---- Highlight + suggestion refresh loop ----
+  function refreshHighlights() {
     if (!isRunning() || isPaused()) return;
-    findAllPosts().forEach(processPost);
+    const posts = findAllPosts();
+    recordSelectorHealth(posts);
+    for (const post of posts) {
+      const likeBtn = findLikeButton(post);
+      if (!likeBtn) continue;
+      if (isAlreadyLiked(likeBtn)) {
+        likeBtn.classList.remove(HIGHLIGHT_CLASS);
+      } else if (!likeBtn.classList.contains(HIGHLIGHT_CLASS)) {
+        likeBtn.classList.add(HIGHLIGHT_CLASS);
+      }
+      // If a comment editor is open in this post, surface templates under it.
+      if (!post.hasAttribute(SUGGESTION_DONE_ATTR)) {
+        const ed = findEditor(post);
+        if (ed) {
+          post.setAttribute(SUGGESTION_DONE_ATTR, '1');
+          injectSuggestions(post);
+        }
+      }
+    }
   }
 
+  const observer = new MutationObserver(() => refreshHighlights());
   observer.observe(document.body, { childList: true, subtree: true });
-  scan();
-  const intervalId = window.setInterval(scan, 3000);
+  refreshHighlights();
+  const intervalId = window.setInterval(refreshHighlights, 2000);
 
-  return () => {
+  const teardown = () => {
     clearInterval(intervalId);
     observer.disconnect();
-    commentHandlers.forEach(({ post, handler }) => post.removeEventListener('click', handler, { capture: true } as any));
+    document.removeEventListener('click', onDocClick, true);
     style.remove();
-    document.querySelectorAll(`.${HIGHLIGHT_CLASS}`).forEach(el => el.classList.remove(HIGHLIGHT_CLASS));
-    document.querySelectorAll(`.${SUGGESTION_CLASS}`).forEach(el => el.remove());
-    document.querySelectorAll(`[${PROCESSED_ATTR}]`).forEach(el => el.removeAttribute(PROCESSED_ATTR));
+    document.querySelectorAll(`.${HIGHLIGHT_CLASS}`).forEach((el) => el.classList.remove(HIGHLIGHT_CLASS));
+    document.querySelectorAll(`.${SUGGESTION_CLASS}`).forEach((el) => el.remove());
+    document.querySelectorAll(`[${SUGGESTION_DONE_ATTR}]`).forEach((el) => el.removeAttribute(SUGGESTION_DONE_ATTR));
+  };
+
+  const unregister = registerTeardown(teardown);
+  return () => {
+    unregister();
+    teardown();
   };
 }

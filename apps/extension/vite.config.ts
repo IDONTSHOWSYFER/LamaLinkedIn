@@ -21,6 +21,24 @@ export default defineConfig({
       input: {
         popup: resolve(__dirname, 'src/popup/index.html'),
       },
+      output: {
+        // Keep everything the content script needs inside a single bundle so it
+        // never loads a *separate* shared web-accessible chunk. Such a chunk is
+        // fetched through chrome.runtime.getURL(), which resolves to
+        // `chrome-extension://invalid/` (net::ERR_FAILED) the moment Chrome
+        // invalidates the extension context — e.g. a silent auto-update of the
+        // published extension while a LinkedIn tab stays open.
+        manualChunks(id: string) {
+          if (
+            id.includes('/src/content/') ||
+            id.includes('/src/lib/') ||
+            id.includes('/src/types')
+          ) {
+            return 'content';
+          }
+          return undefined;
+        },
+      },
     },
   },
 });
