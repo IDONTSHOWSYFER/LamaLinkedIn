@@ -1,4 +1,4 @@
-import { getConfig, getSession, setSession, logEvent, addVisitedId, getVisitedIds, clearVisitedIds } from '@/lib/storage';
+import { getConfig, getSession, setSession, logEvent, addVisitedId, getVisitedIds, clearVisitedIds, isExtensionContextValid } from '@/lib/storage';
 import { AppMode, ActionEvent, SessionState, UserConfig } from '@/types';
 import { assistMode } from './assist';
 import { agentMode } from './agent';
@@ -253,6 +253,25 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   return false;
 });
+
+// Self-terminate when the extension context is invalidated (extension reloaded,
+// updated, or disabled while this tab stayed open). Without this, the orphaned
+// content script keeps its observers, intervals and agent loop running against a
+// dead context, flooding the console with "chrome-extension://invalid/" errors.
+// runtime.id becomes undefined on invalidation, so we poll it and tear down
+// everything silently — no chrome.* calls, so nothing throws.
+if (!alreadyLoaded) {
+  const contextWatchdog = window.setInterval(() => {
+    if (isExtensionContextValid()) return;
+    clearInterval(contextWatchdog);
+    running = false;
+    paused = false;
+    if (sessionTimerHandle) { clearTimeout(sessionTimerHandle); sessionTimerHandle = null; }
+    if (assistCleanup) { try { assistCleanup(); } catch {} assistCleanup = null; }
+    if (agentCleanup) { try { agentCleanup(); } catch {} agentCleanup = null; }
+    try { removePanel(); } catch {}
+  }, 2000);
+}
 
 // Auto-start check on page load
 if (!alreadyLoaded)

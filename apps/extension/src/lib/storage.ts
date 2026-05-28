@@ -9,7 +9,21 @@ const STORAGE_KEYS = {
   installId: 'lbp_installId',
 } as const;
 
+// True only while this script still belongs to a live extension. After the
+// extension is reloaded/disabled, an orphaned content script keeps running but
+// `chrome.runtime.id` becomes undefined and every chrome.* call throws
+// "Extension context invalidated". Guarding here makes storage helpers no-op
+// silently instead of flooding the console.
+export function isExtensionContextValid(): boolean {
+  try {
+    return !!chrome?.runtime?.id;
+  } catch {
+    return false;
+  }
+}
+
 export async function getConfig(): Promise<UserConfig> {
+  if (!isExtensionContextValid()) return { ...DEFAULT_CONFIG };
   const result = await chrome.storage.local.get(STORAGE_KEYS.config);
   return { ...DEFAULT_CONFIG, ...(result[STORAGE_KEYS.config] || {}) };
 }
@@ -17,11 +31,13 @@ export async function getConfig(): Promise<UserConfig> {
 export async function setConfig(partial: Partial<UserConfig>): Promise<UserConfig> {
   const current = await getConfig();
   const updated = { ...current, ...partial };
+  if (!isExtensionContextValid()) return updated;
   await chrome.storage.local.set({ [STORAGE_KEYS.config]: updated });
   return updated;
 }
 
 export async function getSession(): Promise<SessionState> {
+  if (!isExtensionContextValid()) return { ...DEFAULT_SESSION };
   const result = await chrome.storage.local.get(STORAGE_KEYS.session);
   const session = { ...DEFAULT_SESSION, ...(result[STORAGE_KEYS.session] || {}) };
   // Reset daily counters if past reset time
@@ -36,11 +52,13 @@ export async function getSession(): Promise<SessionState> {
 export async function setSession(partial: Partial<SessionState>): Promise<SessionState> {
   const current = await getSession();
   const updated = { ...current, ...partial };
+  if (!isExtensionContextValid()) return updated;
   await chrome.storage.local.set({ [STORAGE_KEYS.session]: updated });
   return updated;
 }
 
 export async function logEvent(event: ActionEvent): Promise<void> {
+  if (!isExtensionContextValid()) return;
   const result = await chrome.storage.local.get(STORAGE_KEYS.events);
   const events: ActionEvent[] = result[STORAGE_KEYS.events] || [];
   events.unshift(event);
@@ -50,17 +68,20 @@ export async function logEvent(event: ActionEvent): Promise<void> {
 }
 
 export async function getEvents(limit = 50): Promise<ActionEvent[]> {
+  if (!isExtensionContextValid()) return [];
   const result = await chrome.storage.local.get(STORAGE_KEYS.events);
   const events: ActionEvent[] = result[STORAGE_KEYS.events] || [];
   return events.slice(0, limit);
 }
 
 export async function getVisitedIds(): Promise<Set<string>> {
+  if (!isExtensionContextValid()) return new Set();
   const result = await chrome.storage.local.get(STORAGE_KEYS.visitedIds);
   return new Set(result[STORAGE_KEYS.visitedIds] || []);
 }
 
 export async function addVisitedId(id: string): Promise<void> {
+  if (!isExtensionContextValid()) return;
   const visited = await getVisitedIds();
   visited.add(id);
   // Keep last 1000
@@ -70,10 +91,12 @@ export async function addVisitedId(id: string): Promise<void> {
 }
 
 export async function clearVisitedIds(): Promise<void> {
+  if (!isExtensionContextValid()) return;
   await chrome.storage.local.set({ [STORAGE_KEYS.visitedIds]: [] });
 }
 
 export async function getInstallId(): Promise<string> {
+  if (!isExtensionContextValid()) return '';
   const result = await chrome.storage.local.get(STORAGE_KEYS.installId);
   if (result[STORAGE_KEYS.installId]) return result[STORAGE_KEYS.installId];
   const id = crypto.randomUUID();
@@ -82,14 +105,17 @@ export async function getInstallId(): Promise<string> {
 }
 
 export async function getAuth(): Promise<any | null> {
+  if (!isExtensionContextValid()) return null;
   const result = await chrome.storage.local.get(STORAGE_KEYS.auth);
   return result[STORAGE_KEYS.auth] || null;
 }
 
 export async function setAuth(auth: any): Promise<void> {
+  if (!isExtensionContextValid()) return;
   await chrome.storage.local.set({ [STORAGE_KEYS.auth]: auth });
 }
 
 export async function clearAuth(): Promise<void> {
+  if (!isExtensionContextValid()) return;
   await chrome.storage.local.remove(STORAGE_KEYS.auth);
 }
