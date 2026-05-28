@@ -1,5 +1,4 @@
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('Lama Linked.In v3.0.0 installed');
   chrome.action.setBadgeBackgroundColor({ color: '#0A66C2' });
   chrome.action.setBadgeText({ text: '' });
   chrome.storage.local.set({ lbp_session: { botState: 'idle' } });

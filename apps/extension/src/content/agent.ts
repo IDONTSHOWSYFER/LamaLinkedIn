@@ -1,5 +1,6 @@
 import { UserConfig } from '@/types';
 import { getSession, setSession, getVisitedIds, addVisitedId } from '@/lib/storage';
+import { log, warn, error } from '@/lib/log';
 
 type ActionCallback = (type: 'like' | 'comment', postId: string, content: string, authorName: string) => void;
 
@@ -431,7 +432,7 @@ async function clickLoadMoreIfPresent(): Promise<boolean> {
                        btn.parentElement?.querySelector('[role="list"]');
       if (nearFeed || btn.getBoundingClientRect().top > 0) {
         btn.click();
-        console.log('[Lama Agent] Clicked "Charger plus" to load more posts');
+        log('Clicked "Charger plus" to load more posts');
         await sleep(1500 + Math.random() * 1000); // Wait for posts to load
         return true;
       }
@@ -646,7 +647,7 @@ export async function agentMode(
           const existingText = ed.textContent?.trim() || '';
           if (existingText.length > 0 && existingText !== 'Ajouter un commentaire…') {
             // Editor has content — skip this post, don't type over it
-            console.log('[Lama Agent] Editor already has content, skipping:', existingText.substring(0, 30));
+            log('Editor already has content, skipping:', existingText.substring(0, 30));
             return did; // Return whatever we already did (like)
           }
 
@@ -676,7 +677,7 @@ export async function agentMode(
               await sleep(jitter(600, level));
             } else {
               // Submit button not found — clear editor and move on
-              console.warn('[Lama Agent] Submit button not found, skipping comment');
+              warn('Submit button not found, skipping comment');
               ed.focus();
               const sel = window.getSelection();
               if (sel) { sel.selectAllChildren(ed); }
@@ -731,7 +732,7 @@ export async function agentMode(
 
       if (unvisited.length === 0) {
         idleTries++;
-        console.log(`[Lama Agent] No unvisited posts in viewport (attempt ${idleTries}/${MAX_IDLE}), scrolling...`);
+        log(`No unvisited posts in viewport (attempt ${idleTries}/${MAX_IDLE}), scrolling...`);
 
         // Use aggressive scroll when no posts are found
         await aggressiveScroll(level, isRunning, isPaused);
@@ -767,7 +768,7 @@ export async function agentMode(
 
       // ALWAYS scroll to find the next post — this is the key fix
       // The agent must continuously scroll the feed, never waiting for posts to appear
-      console.log(`[Lama Agent] Action done (did=${did}), scrolling to next post... [${ctx.likes}L/${ctx.comments}C]`);
+      log(`Action done (did=${did}), scrolling to next post... [${ctx.likes}L/${ctx.comments}C]`);
       await smoothScroll(level, isRunning, isPaused, Math.max(config.skipPosts || 0, 2));
 
       // Wait for LinkedIn to lazy-load new posts after scrolling
@@ -780,7 +781,7 @@ export async function agentMode(
         return pid && !visitedIds.has(pid);
       });
       if (newUnvisited.length === 0) {
-        console.log('[Lama Agent] No new posts after scroll, doing extra scroll...');
+        log('No new posts after scroll, doing extra scroll...');
         await smoothScroll(level, isRunning, isPaused, 3);
         await sleep(jitter(800, level));
       }
@@ -798,7 +799,7 @@ export async function agentMode(
       // Session complete — handle pause + refresh cycle
       if (config.sessionsPerDay > 1 && config.refreshAfterSession !== false) {
         const pauseMs = (config.pauseDurationMin || 5) * 60 * 1000;
-        console.log(`[Lama Agent] Session complete. Pausing ${config.pauseDurationMin || 5}min before next session...`);
+        log(`Session complete. Pausing ${config.pauseDurationMin || 5}min before next session...`);
         try {
           chrome.runtime.sendMessage({
             type: 'LBP_NOTIFY',
@@ -815,7 +816,7 @@ export async function agentMode(
       }
     }
     } catch (err) {
-      console.error('[Lama Agent] Error in main loop:', err);
+      error('Error in main loop:', err);
     }
   })();
 

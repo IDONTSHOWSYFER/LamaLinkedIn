@@ -3,8 +3,9 @@ import { AppMode, ActionEvent, SessionState, UserConfig } from '@/types';
 import { assistMode } from './assist';
 import { agentMode } from './agent';
 import { injectPanel, updatePanel, updatePanelTimer, updatePanelStatus, removePanel } from './panel';
+import { log, error } from '@/lib/log';
 
-console.log('[Lama Linked.In] Content script loaded on', window.location.href);
+log('Content script loaded on', window.location.href);
 
 let running = false;
 let paused = false;
@@ -59,7 +60,7 @@ async function start(mode: AppMode, reset: boolean) {
       agentCleanup = await agentMode(config, () => running, () => paused, onAction);
     }
   } catch (err) {
-    console.error('[Lama] Failed to start:', err);
+    error('Failed to start:', err);
     running = false;
   }
 }
@@ -190,7 +191,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     start(msg.payload.mode, msg.payload.reset !== false).then(() => {
       sendResponse({ ok: true });
     }).catch((err) => {
-      console.error('[Lama] start error:', err);
+      error('start error:', err);
       sendResponse({ ok: false, error: String(err) });
     });
     return true; // async response
