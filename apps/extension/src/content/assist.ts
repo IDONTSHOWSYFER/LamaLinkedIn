@@ -13,83 +13,55 @@ const SUGGESTIONS = [
   'Merci pour cette perspective enrichissante.',
 ];
 
-// ========== LinkedIn 2025+ DOM selectors ==========
-// LinkedIn now uses hashed CSS classes and role-based containers.
-// Posts are div[role="listitem"], like buttons have aria-label with "réaction",
-// the editor is .tiptap.ProseMirror, and the submit button has componentkey
-// containing "commentButtonSection".
+// ========== DOM selectors — multi-strategy (Ember + React LinkedIn) ==========
 
-/** Find the post container from any child element */
+function hasLikeButton(el: Element): boolean {
+  return Array.from(el.querySelectorAll('button')).some(b => {
+    const label = b.getAttribute('aria-label') || '';
+    const text = b.textContent?.trim() || '';
+    return /réaction|réagir|j.aime|like/i.test(label)
+      || /^j.aime$/i.test(text)
+      || b.classList.contains('react-button__trigger');
+  });
+}
+
 function findPostContainer(el: Element): Element | null {
-  // New LinkedIn: posts are role="listitem"
-  const listItem = el.closest('div[role="listitem"]');
-  if (listItem) return listItem;
-  // Old LinkedIn fallbacks
   return el.closest(
-    'div.feed-shared-update-v2, div.update-components-update-v2, article[data-urn]'
+    'div.feed-shared-update-v2, div.update-components-update-v2, article[data-urn], div[role="listitem"]'
   );
 }
 
-/** Find all visible posts on the page */
 function findAllPosts(): Element[] {
   const posts = new Set<Element>();
 
-  // LinkedIn 2025+: posts are div[role="listitem"] containing a like button.
-  // They may NOT be direct children of div[role="list"] (LinkedIn adds wrapper divs).
-  document.querySelectorAll('div[role="listitem"]').forEach(p => {
-    const hasReaction = Array.from(p.querySelectorAll('button')).some(
-      b => (b.getAttribute('aria-label') || '').includes('réaction') ||
-           /^j.aime$/i.test(b.textContent?.trim() || '')
-    );
-    if (hasReaction) posts.add(p);
-  });
-
-  // Old LinkedIn fallbacks
-  if (posts.size === 0) {
-    const oldSelectors = [
-      'div.feed-shared-update-v2',
-      'div.update-components-update-v2',
-      'article[data-urn]',
-    ];
-    for (const sel of oldSelectors) {
-      document.querySelectorAll(sel).forEach(p => posts.add(p));
-    }
+  for (const sel of [
+    'div.feed-shared-update-v2',
+    'div.update-components-update-v2',
+    'article[data-urn]',
+  ]) {
+    document.querySelectorAll(sel).forEach(p => posts.add(p));
   }
+
+  document.querySelectorAll('div[role="listitem"]').forEach(p => {
+    if (hasLikeButton(p)) posts.add(p);
+  });
 
   return Array.from(posts);
 }
 
-/** Find the like button for a post (NOT comment likes) */
 function findLikeButton(post: Element): HTMLButtonElement | null {
+  const classBtn = post.querySelector('button.react-button__trigger') as HTMLButtonElement | null;
+  if (classBtn && !isInsideCommentSection(classBtn)) return classBtn;
+
   const allButtons = post.querySelectorAll('button');
   for (const btn of allButtons) {
-    // Skip buttons inside comment reply areas
     if (isInsideCommentSection(btn)) continue;
-
     const label = btn.getAttribute('aria-label') || '';
     const text = btn.textContent?.trim() || '';
-
-    // New LinkedIn 2025+: aria-label contains "réaction"
-    // e.g. "État du bouton de réaction : aucune réaction"
-    if (/réaction/i.test(label)) {
-      return btn;
-    }
-
-    // Also match by text content "J'aime" (the visible button text)
-    if (/^j.aime$/i.test(text)) {
-      return btn;
-    }
-
-    // Old LinkedIn: aria-label with "J'aime", "réagir", "Like"
-    if (/j.aime/i.test(label) || /réagir/i.test(label) || /like/i.test(label)) {
-      return btn;
-    }
+    if (/réaction|réagir|j.aime/i.test(label)) return btn;
+    if (/^j.aime$/i.test(text)) return btn;
+    if (/^like$/i.test(text) || /\blike\b/i.test(label)) return btn;
   }
-
-  // Old selector fallback
-  const oldBtn = post.querySelector('button.react-button__trigger');
-  if (oldBtn && !isInsideCommentSection(oldBtn)) return oldBtn as HTMLButtonElement;
-
   return null;
 }
 
@@ -114,141 +86,123 @@ function isInsideCommentSection(el: Element): boolean {
   return false;
 }
 
-/** Check if like button is already activated */
 function isAlreadyLiked(btn: HTMLButtonElement): boolean {
-  // Old LinkedIn
   if (btn.getAttribute('aria-pressed') === 'true') return true;
   if (btn.classList.contains('react-button--active')) return true;
-
-  // New LinkedIn 2025+: aria-label tells the state
-  // Not liked: "État du bouton de réaction : aucune réaction"
-  // Liked: does NOT contain "aucune réaction"
+  const parentSpan = btn.closest('.reactions-react-button');
+  if (parentSpan?.querySelector('.react-button--active')) return true;
   const label = btn.getAttribute('aria-label') || '';
-  if (/réaction/i.test(label) && !/aucune/i.test(label)) {
-    return true;
-  }
-
-  // Check for filled like icon (blue circle SVG)
-  const svg = btn.querySelector('svg');
-  if (svg) {
-    const circle = svg.querySelector('circle[fill="#378fe9"], circle[fill="#0a66c2"]');
-    if (circle) return true;
-  }
-
+  if (/aucune/i.test(label)) return false;
+  if (/réaction/i.test(label)) return true;
+  const circle = btn.querySelector('svg circle[fill="#378fe9"], svg circle[fill="#0a66c2"]');
+  if (circle) return true;
   return false;
 }
 
-/** Find the comment button for a post (opens the comment editor) */
 function findCommentButton(post: Element): HTMLButtonElement | null {
+  const classBtn = post.querySelector('button.comment-button') as HTMLButtonElement | null;
+  if (classBtn && !isInsideCommentSection(classBtn)) return classBtn;
+
+  const ariaBtn = post.querySelector('button[aria-label="Commenter" i]') as HTMLButtonElement | null;
+  if (ariaBtn && !isInsideCommentSection(ariaBtn)) return ariaBtn;
+
   const allButtons = post.querySelectorAll('button');
   for (const btn of allButtons) {
     if (isInsideCommentSection(btn)) continue;
-
     const text = btn.textContent?.trim() || '';
     const ck = btn.getAttribute('componentkey') || '';
-
-    // New LinkedIn: "Commenter" text but NOT the submit button
-    // Submit button has componentkey containing "commentButtonSection"
     if (/^commenter$/i.test(text) && !ck.includes('commentButtonSection')) {
       return btn;
     }
   }
-
-  // Old selector fallback
-  const oldBtn = post.querySelector('button.comment-button, button[aria-label="Commenter" i]');
-  if (oldBtn && !isInsideCommentSection(oldBtn)) return oldBtn as HTMLButtonElement;
-
   return null;
 }
 
-/** Find the comment editor (tiptap/ProseMirror or old ql-editor) */
 function findEditor(post: Element): HTMLElement | null {
-  // New LinkedIn 2025+: tiptap ProseMirror editor
-  const tiptap = post.querySelector('.tiptap.ProseMirror[contenteditable="true"]') as HTMLElement;
-  if (tiptap) return tiptap;
-
-  // Aria-label based search
-  const ariaEd = post.querySelector('[contenteditable="true"][aria-label*="commentaire" i], [contenteditable="true"][aria-label*="comment" i]') as HTMLElement;
-  if (ariaEd) return ariaEd;
-
-  // Old LinkedIn: ql-editor
   const qlEd = post.querySelector('.ql-editor[contenteditable="true"]') as HTMLElement;
   if (qlEd) return qlEd;
-
+  const tiptap = post.querySelector('.tiptap.ProseMirror[contenteditable="true"]') as HTMLElement;
+  if (tiptap) return tiptap;
+  const ariaEd = post.querySelector(
+    '[contenteditable="true"][aria-label*="commentaire" i], ' +
+    '[contenteditable="true"][aria-label*="comment" i], ' +
+    '[contenteditable="true"][role="textbox"]'
+  ) as HTMLElement;
+  if (ariaEd) return ariaEd;
   return null;
 }
 
-/** Find the send/submit button for comments */
 function findSendButton(post: Element): HTMLButtonElement | null {
+  let btn = post.querySelector('button.comments-comment-box__submit-button--cr') as HTMLButtonElement | null;
+  if (btn) return btn;
+  btn = post.querySelector('form.comments-comment-box__form button.artdeco-button--primary') as HTMLButtonElement | null;
+  if (btn) return btn;
+
   const allButtons = post.querySelectorAll('button');
-  for (const btn of allButtons) {
-    const ck = btn.getAttribute('componentkey') || '';
-    const text = btn.textContent?.trim() || '';
-    const label = btn.getAttribute('aria-label') || '';
-
-    // New LinkedIn 2025+: submit button has componentkey with "commentButtonSection"
-    // and text "Commenter"
-    if (ck.includes('commentButtonSection')) {
-      return btn;
-    }
-
-    // Old LinkedIn: "publier", "envoyer", "poster"
-    if (/publier|envoyer|poster|submit|send/i.test(label) || /publier|envoyer|poster/i.test(text)) {
-      const inCommentArea = btn.closest('[componentkey*="commentBox" i], .comments-comment-box, .comments-comment-box--cr');
-      if (inCommentArea) return btn;
+  for (const b of allButtons) {
+    const ck = b.getAttribute('componentkey') || '';
+    if (ck.includes('commentButtonSection')) return b;
+  }
+  for (const b of allButtons) {
+    const label = b.getAttribute('aria-label') || '';
+    const text = b.textContent?.trim() || '';
+    if (/publier|poster/i.test(label) || /publier|poster/i.test(text)) {
+      const inCommentArea = b.closest(
+        '.comments-comment-box, .comments-comment-box--cr, [componentkey*="commentBox" i]'
+      );
+      if (inCommentArea) return b;
     }
   }
-
-  // Old selectors fallback
-  const old = post.querySelector('button.comments-comment-box__submit-button--cr, form.comments-comment-box__form button.artdeco-button--primary') as HTMLButtonElement;
-  if (old) return old;
-
   return null;
 }
 
 function getPostId(post: Element): string {
-  // New LinkedIn 2025+: use componentkey as post identifier
-  const ck = post.getAttribute('componentkey');
-  if (ck) return ck;
+  const cached = post.getAttribute('data-lbp-id');
+  if (cached) return cached;
 
-  // Old LinkedIn: data-urn
-  const urn = post.getAttribute('data-urn') || post.getAttribute('data-chameleon-result-urn');
-  if (urn) return urn;
-  const art = post.closest('article[data-urn]');
-  if (art) return art.getAttribute('data-urn')!;
+  let id: string | null = null;
 
-  // Fallback: generate unique ID
-  return `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  id = post.getAttribute('data-urn') || post.getAttribute('data-chameleon-result-urn') || null;
+  if (!id) {
+    const art = post.querySelector('article[data-urn]') || post.closest('article[data-urn]');
+    if (art) id = art.getAttribute('data-urn');
+  }
+  if (!id) {
+    const emberBtn = post.querySelector('button.react-button__trigger[id]');
+    if (emberBtn) id = `ember-${emberBtn.id}`;
+  }
+  if (!id) id = post.getAttribute('componentkey');
+  if (!id) {
+    const innerCk = post.querySelector('[componentkey*="commentBox"]')?.getAttribute('componentkey');
+    if (innerCk) id = innerCk;
+  }
+  if (!id) {
+    id = `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  post.setAttribute('data-lbp-id', id);
+  return id;
 }
 
 function getAuthorName(post: Element): string {
-  // New LinkedIn 2025+: Author name is in a <p> tag near the top of the post.
-  // It's typically the first meaningful text node that isn't a status/label.
-  const allPs = post.querySelectorAll('p');
-  for (const p of allPs) {
-    const text = p.textContent?.trim();
-    // Skip empty, very short, or very long texts; skip known non-author patterns
-    if (!text || text.length < 2 || text.length > 60) continue;
-    if (/abonné|follower|^\d|commentaire|réaction|republication|^http|^#|^…|Ajouter un/i.test(text)) continue;
-    // Skip if it's inside the post content area (after the author section)
-    // Author <p> is usually one of the first <p> tags
-    return text;
-  }
-
-  // Old LinkedIn selectors
-  const selectors = [
+  for (const sel of [
     '.update-components-actor__name span',
     '.feed-shared-actor__name span',
     'span[dir="ltr"] span[aria-hidden="true"]',
     'a[data-test-app-aware-link] span',
-  ];
-  for (const sel of selectors) {
+  ]) {
     const el = post.querySelector(sel);
     const text = el?.textContent?.trim();
     if (text && text.length > 1 && text.length < 80) return text;
   }
-
-  return 'Utilisateur Linked.In';
+  const allPs = post.querySelectorAll('p');
+  for (const p of allPs) {
+    const text = p.textContent?.trim();
+    if (!text || text.length < 2 || text.length > 60) continue;
+    if (/abonné|follower|^\d|commentaire|réaction|republication|^http|^#|^…|Ajouter un/i.test(text)) continue;
+    return text;
+  }
+  return 'Utilisateur';
 }
 
 export function assistMode(
@@ -344,14 +298,22 @@ export function assistMode(
     const ed = findEditor(post);
     if (!ed) return;
     ed.focus();
-    // Use ClipboardEvent paste — the only reliable method for tiptap/ProseMirror
     const sel = window.getSelection();
-    if (sel) { sel.selectAllChildren(ed); }
-    const dt = new DataTransfer();
-    dt.setData('text/plain', text);
-    ed.dispatchEvent(new ClipboardEvent('paste', {
-      clipboardData: dt, bubbles: true, cancelable: true,
-    }));
+    if (sel) { sel.selectAllChildren(ed); sel.deleteFromDocument(); }
+
+    if (ed.classList.contains('ql-editor')) {
+      document.execCommand('insertText', false, text);
+      if (!ed.textContent?.trim()) {
+        ed.textContent = text;
+        ed.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    } else {
+      const dt = new DataTransfer();
+      dt.setData('text/plain', text);
+      ed.dispatchEvent(new ClipboardEvent('paste', {
+        clipboardData: dt, bubbles: true, cancelable: true,
+      }));
+    }
   }
 
   function buildSuggestionChips(post: Element, bar: HTMLElement) {
@@ -403,37 +365,38 @@ export function assistMode(
       buildSuggestionChips(post, bar);
     });
 
-    // Insert AFTER the submit button section — OUTSIDE the editor area
-    // This prevents the suggestions from squeezing the editor and causing vertical text
+    // Ember: insert after the comment form
+    const commentForm = post.querySelector('form.comments-comment-box__form');
+    if (commentForm) {
+      commentForm.parentElement?.insertBefore(bar, commentForm.nextSibling);
+      return;
+    }
+
+    // Ember: insert after the comment box wrapper
+    const commentBox = post.querySelector('.comments-comment-box, .comments-comment-box--cr');
+    if (commentBox) {
+      commentBox.parentElement?.insertBefore(bar, commentBox.nextSibling);
+      return;
+    }
+
+    // React: insert after componentkey-based submit section
     const submitSection = post.querySelector('div[componentkey*="commentButtonSection" i]');
     if (submitSection) {
       submitSection.parentElement?.insertBefore(bar, submitSection.nextSibling);
       return;
     }
 
-    // Fallback: insert after the comment box link preview (last element in comment area)
-    const linkPreview = post.querySelector('[componentkey*="commentBoxLinkPreview" i]');
-    if (linkPreview) {
-      linkPreview.parentElement?.insertBefore(bar, linkPreview.nextSibling);
-      return;
-    }
-
-    // Fallback: insert after the comment box wrapper's parent
-    const commentBox = post.querySelector(
-      '[componentkey*="commentBox" i], .comments-comment-box, .comments-comment-box--cr'
-    );
-    if (commentBox) {
-      // Go up past the editor wrapper to not block the editor
-      const editorWrapper = commentBox.closest('[data-testid="ui-core-tiptap-text-editor-wrapper"]')?.parentElement
-        || commentBox.parentElement;
-      const outerWrapper = editorWrapper?.parentElement;
-      if (outerWrapper) {
-        outerWrapper.parentElement?.insertBefore(bar, outerWrapper.nextSibling);
+    // React: insert after componentkey-based comment box
+    const reactBox = post.querySelector('[componentkey*="commentBox" i]');
+    if (reactBox) {
+      const wrapper = reactBox.closest('[data-testid="ui-core-tiptap-text-editor-wrapper"]')?.parentElement
+        || reactBox.parentElement;
+      if (wrapper?.parentElement) {
+        wrapper.parentElement.insertBefore(bar, wrapper.nextSibling);
         return;
       }
     }
 
-    // Last fallback: append to post
     post.appendChild(bar);
   }
 
