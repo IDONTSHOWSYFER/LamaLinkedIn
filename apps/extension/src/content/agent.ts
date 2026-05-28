@@ -1,6 +1,16 @@
 import { UserConfig } from '@/types';
 import { getSession, setSession, getVisitedIds, addVisitedId } from '@/lib/storage';
 import { log, warn, error } from '@/lib/log';
+import {
+  getVisiblePosts as getPosts,
+  findLikeButton,
+  isLiked,
+  findCommentButton,
+  findEditor,
+  findSendButton,
+  getPostId,
+  getAuthorName,
+} from './linkedin';
 
 type ActionCallback = (type: 'like' | 'comment', postId: string, content: string, authorName: string) => void;
 
@@ -133,216 +143,6 @@ function removeCursor() {
   document.getElementById('lbp-cursor')?.remove();
   document.getElementById('lbp-cursor-styles')?.remove();
   cursorEl = null;
-}
-
-// ========== DOM Selectors — multi-strategy (Ember + React LinkedIn) ==========
-// LinkedIn ships two renderers: legacy Ember (artdeco/ql-editor) and new React
-// (tiptap/ProseMirror, role="listitem", componentkey). We detect BOTH in
-// parallel so the extension works regardless of which version the user gets.
-
-function hasLikeButton(el: Element): boolean {
-  return Array.from(el.querySelectorAll('button')).some(b => {
-    const label = b.getAttribute('aria-label') || '';
-    const text = b.textContent?.trim() || '';
-    return /réaction|réagir|j.aime|like/i.test(label)
-      || /^j.aime$/i.test(text)
-      || b.classList.contains('react-button__trigger');
-  });
-}
-
-const getPosts = () => {
-  const posts = new Set<Element>();
-
-  for (const sel of [
-    'div.feed-shared-update-v2',
-    'div.update-components-update-v2',
-    'article[data-urn]',
-  ]) {
-    document.querySelectorAll(sel).forEach(p => posts.add(p));
-  }
-
-  document.querySelectorAll('div[role="listitem"]').forEach(p => {
-    if (hasLikeButton(p)) posts.add(p);
-  });
-
-  return Array.from(posts).filter(p => {
-    const r = p.getBoundingClientRect();
-    return r.top < innerHeight + 500 && r.bottom > -200;
-  });
-};
-
-function isInsideCommentSection(el: Element): boolean {
-  // Old LinkedIn
-  if (el.closest('.comments-comment-entity, .comments-comment-social-bar, .comments-comments-list')) return true;
-  const label = el.getAttribute('aria-label') || '';
-  if (/au commentaire/i.test(label) || /comment.*like/i.test(label)) return true;
-  // New LinkedIn: componentkey with reply
-  const ck = el.getAttribute('componentkey') || '';
-  const parentCk = el.closest('[componentkey]')?.getAttribute('componentkey') || '';
-  if (/reply|commentReply/i.test(ck) || /reply|commentReply/i.test(parentCk)) return true;
-  return false;
-}
-
-function findLikeButton(p: Element): HTMLButtonElement | null {
-  // Priority 1: class-based (Ember) — most reliable, won't false-positive
-  const classBtn = p.querySelector('button.react-button__trigger') as HTMLButtonElement | null;
-  if (classBtn && !isInsideCommentSection(classBtn)) return classBtn;
-
-  // Priority 2: scan all buttons by aria-label / text
-  const allButtons = p.querySelectorAll('button');
-  for (const btn of allButtons) {
-    if (isInsideCommentSection(btn)) continue;
-    const label = btn.getAttribute('aria-label') || '';
-    const text = btn.textContent?.trim() || '';
-    if (/réaction|réagir|j.aime/i.test(label)) return btn;
-    if (/^j.aime$/i.test(text)) return btn;
-    if (/^like$/i.test(text) || /\blike\b/i.test(label)) return btn;
-  }
-  return null;
-}
-
-function isLiked(b: HTMLButtonElement | null): boolean {
-  if (!b) return true;
-  // Ember: explicit pressed state
-  if (b.getAttribute('aria-pressed') === 'true') return true;
-  if (b.classList.contains('react-button--active')) return true;
-  // Ember: parent span gets an active class
-  const parentSpan = b.closest('.reactions-react-button');
-  if (parentSpan?.querySelector('.react-button--active')) return true;
-  // React: "aucune réaction" = not liked; "réaction" without "aucune" = liked
-  const label = b.getAttribute('aria-label') || '';
-  if (/aucune/i.test(label)) return false;
-  if (/réaction/i.test(label)) return true;
-  // SVG fill colour (both renderers may use this)
-  const circle = b.querySelector('svg circle[fill="#378fe9"], svg circle[fill="#0a66c2"]');
-  if (circle) return true;
-  return false;
-}
-
-function findCommentButton(p: Element): HTMLButtonElement | null {
-  // Priority 1: Ember class
-  const classBtn = p.querySelector('button.comment-button') as HTMLButtonElement | null;
-  if (classBtn && !isInsideCommentSection(classBtn)) return classBtn;
-
-  // Priority 2: aria-label
-  const ariaBtn = p.querySelector('button[aria-label="Commenter" i]') as HTMLButtonElement | null;
-  if (ariaBtn && !isInsideCommentSection(ariaBtn)) return ariaBtn;
-
-  // Priority 3: text scan (exclude submit buttons)
-  const allButtons = p.querySelectorAll('button');
-  for (const btn of allButtons) {
-    if (isInsideCommentSection(btn)) continue;
-    const text = btn.textContent?.trim() || '';
-    const ck = btn.getAttribute('componentkey') || '';
-    if (/^commenter$/i.test(text) && !ck.includes('commentButtonSection')) {
-      return btn;
-    }
-  }
-  return null;
-}
-
-function findEditor(p: Element): HTMLElement | null {
-  // Ember: Quill editor
-  const qlEd = p.querySelector('.ql-editor[contenteditable="true"]') as HTMLElement;
-  if (qlEd) return qlEd;
-  // React: tiptap ProseMirror
-  const tiptap = p.querySelector('.tiptap.ProseMirror[contenteditable="true"]') as HTMLElement;
-  if (tiptap) return tiptap;
-  // Generic: any contenteditable related to comments
-  const ariaEd = p.querySelector(
-    '[contenteditable="true"][aria-label*="commentaire" i], ' +
-    '[contenteditable="true"][aria-label*="comment" i], ' +
-    '[contenteditable="true"][role="textbox"]'
-  ) as HTMLElement;
-  if (ariaEd) return ariaEd;
-  return null;
-}
-
-function findSendButton(p: Element): HTMLButtonElement | null {
-  // Ember: dedicated submit class
-  let btn = p.querySelector('button.comments-comment-box__submit-button--cr') as HTMLButtonElement | null;
-  if (btn) return btn;
-  // Ember: primary button inside the comment form
-  btn = p.querySelector('form.comments-comment-box__form button.artdeco-button--primary') as HTMLButtonElement | null;
-  if (btn) return btn;
-
-  // React: componentkey-based
-  const allButtons = p.querySelectorAll('button');
-  for (const b of allButtons) {
-    const ck = b.getAttribute('componentkey') || '';
-    if (ck.includes('commentButtonSection')) return b;
-  }
-
-  // Generic: text/label scan inside a comment area
-  for (const b of allButtons) {
-    const label = b.getAttribute('aria-label') || '';
-    const text = b.textContent?.trim() || '';
-    if (/publier|poster/i.test(label) || /publier|poster/i.test(text)) {
-      const inCommentArea = b.closest(
-        '.comments-comment-box, .comments-comment-box--cr, ' +
-        '[componentkey*="commentBox" i]'
-      );
-      if (inCommentArea) return b;
-    }
-  }
-  return null;
-}
-
-function getPostId(p: Element): string {
-  const cached = p.getAttribute('data-lbp-id');
-  if (cached) return cached;
-
-  let id: string | null = null;
-
-  // Ember: data-urn on the post or a parent article
-  id = p.getAttribute('data-urn') || p.getAttribute('data-chameleon-result-urn') || null;
-  if (!id) {
-    const art = p.querySelector('article[data-urn]') || p.closest('article[data-urn]');
-    if (art) id = art.getAttribute('data-urn');
-  }
-
-  // Ember: unique ember ID on like button or the post itself
-  if (!id) {
-    const emberBtn = p.querySelector('button.react-button__trigger[id]');
-    if (emberBtn) id = `ember-${emberBtn.id}`;
-  }
-
-  // React: componentkey
-  if (!id) id = p.getAttribute('componentkey');
-  if (!id) {
-    const innerCk = p.querySelector('[componentkey*="commentBox"]')?.getAttribute('componentkey');
-    if (innerCk) id = innerCk;
-  }
-
-  if (!id) {
-    id = `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  p.setAttribute('data-lbp-id', id);
-  return id;
-}
-
-function getAuthorName(p: Element): string {
-  // Ember: structured selectors
-  for (const sel of [
-    '.update-components-actor__name span',
-    '.feed-shared-actor__name span',
-    'span[dir="ltr"] span[aria-hidden="true"]',
-    'a[data-test-app-aware-link] span',
-  ]) {
-    const el = p.querySelector(sel);
-    const text = el?.textContent?.trim();
-    if (text && text.length > 1 && text.length < 80) return text;
-  }
-  // React: first meaningful <p> tag
-  const allPs = p.querySelectorAll('p');
-  for (const para of allPs) {
-    const text = para.textContent?.trim();
-    if (!text || text.length < 2 || text.length > 60) continue;
-    if (/abonné|follower|^\d|commentaire|réaction|republication|^http|^#|^…|Ajouter un|Post du/i.test(text)) continue;
-    return text;
-  }
-  return 'Utilisateur';
 }
 
 // ========== Human Typing ==========
