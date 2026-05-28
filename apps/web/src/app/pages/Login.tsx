@@ -127,9 +127,9 @@ export function Login() {
                 <input type="checkbox" className="w-4 h-4 rounded border-white/20 bg-neutral-900/50 text-primary focus:ring-primary" />
                 Se souvenir de moi
               </label>
-              <a href="#" className="text-sm text-primary hover:text-primary-dark transition-colors">
-                Mot de passe oublie ?
-              </a>
+              <Link to="/forgot-password" className="text-sm text-primary hover:text-primary-dark transition-colors">
+                Mot de passe oublié ?
+              </Link>
             </div>
 
             <Button

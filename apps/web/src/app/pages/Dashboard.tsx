@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Settings, CreditCard, Activity, Users, Download, Star, TrendingUp, Zap, PlayCircle, BookOpen, Target, BarChart3, Calendar } from 'lucide-react';
+import { Settings, CreditCard, Activity, Users, Download, Star, TrendingUp, Zap, PlayCircle, BookOpen, Target, BarChart3, Calendar, ExternalLink, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { motion } from 'motion/react';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lama-linked-in/mjabdegoelohpjfgcljlphoeffiafdpi';
+
+interface ApiStats {
+  likes: number;
+  comments: number;
+  total: number;
+  dailyBreakdown: Array<{ type: string; _count: number }>;
+  recentEvents: Array<{ id: string; type: string; authorName?: string; createdAt: string; mode?: string }>;
+}
 
 interface StatsData {
   requests: number;
@@ -37,14 +47,35 @@ export function Dashboard() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [showVideo, setShowVideo] = useState(false);
+
   useEffect(() => {
     setLoading(true);
-    api<StatsData>(`/events/stats?range=${dateRange}`)
-      .then(setStats)
-      .catch(() => {
-        // Use fallback data if API not available
-        setStats(null);
+    api<ApiStats>(`/events/stats?period=${dateRange}`)
+      .then((data) => {
+        // Map API response to dashboard format
+        const connections = data.dailyBreakdown?.find(d => d.type === 'connection')?._count || 0;
+        const messages = data.dailyBreakdown?.find(d => d.type === 'message')?._count || 0;
+        const mapped: StatsData = {
+          requests: data.total || 0,
+          connections,
+          messages,
+          responseRate: data.total > 0 ? Math.round((data.comments / data.total) * 100) : 0,
+          requestsChange: `${data.total}`,
+          connectionsRate: connections > 0 ? `${Math.round((connections / data.total) * 100)}%` : '0%',
+          messagesChange: `${messages}`,
+          responseRateChange: `${data.likes} likes`,
+          chartData: DEFAULT_CHART_DATA,
+          recentEvents: (data.recentEvents || []).slice(0, 10).map(e => ({
+            name: e.authorName || 'Interaction LinkedIn',
+            type: e.type,
+            status: e.mode || 'assist',
+            date: new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
+          })),
+        };
+        setStats(mapped);
       })
+      .catch(() => setStats(null))
       .finally(() => setLoading(false));
   }, [dateRange]);
 
@@ -258,6 +289,31 @@ export function Dashboard() {
         </GlassCard>
       </div>
 
+      {/* Video Modal */}
+      {showVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowVideo(false)}>
+          <div className="relative w-full max-w-3xl mx-4" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowVideo(false)} className="absolute -top-10 right-0 text-white hover:text-neutral-300">
+              <X size={24} />
+            </button>
+            <div className="rounded-2xl overflow-hidden bg-neutral-900 shadow-2xl">
+              <div className="aspect-video flex flex-col items-center justify-center p-12 text-center">
+                <PlayCircle size={64} className="text-accent mb-6" />
+                <h3 className="text-2xl font-bold text-white mb-3">Comment utiliser Lama Linked.In</h3>
+                <div className="space-y-3 text-left text-neutral-300 text-sm max-w-md">
+                  <p><span className="text-accent font-semibold">1.</span> Installez l'extension Chrome depuis le Web Store</p>
+                  <p><span className="text-accent font-semibold">2.</span> Ouvrez LinkedIn et cliquez sur l'icone Lama</p>
+                  <p><span className="text-accent font-semibold">3.</span> Choisissez <strong>Mode Assiste</strong> (controle total) ou <strong>Mode Agent</strong> (automatique)</p>
+                  <p><span className="text-accent font-semibold">4.</span> Cliquez <strong>Demarrer</strong> — Lama interagit pour vous</p>
+                  <p><span className="text-accent font-semibold">5.</span> Suivez vos stats en temps reel ici dans le dashboard</p>
+                </div>
+                <p className="text-neutral-500 text-xs mt-6">Video tutoriel bientot disponible</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div className="grid md:grid-cols-3 gap-6 mb-10">
         <GlassCard className="p-6 border-white/5 bg-gradient-to-br from-primary/10 to-transparent hover:border-primary/30 transition-all">
@@ -265,10 +321,12 @@ export function Dashboard() {
             <h3 className="text-adaptive font-semibold">Telecharger l'extension</h3>
             <Download className="text-primary" size={20} />
           </div>
-          <p className="text-sm text-neutral-400 mb-6">Lama v2.0 est prete. Assurez-vous d'avoir la derniere version pour profiter de toutes les fonctionnalites.</p>
-          <Button variant="primary" size="sm" className="w-full">
-            <Download className="mr-2" size={16} /> Installer Chrome Extension
-          </Button>
+          <p className="text-sm text-neutral-400 mb-6">Lama v3.0 est prete. Assurez-vous d'avoir la derniere version pour profiter de toutes les fonctionnalites.</p>
+          <a href={CHROME_EXTENSION_URL} target="_blank" rel="noopener noreferrer">
+            <Button variant="primary" size="sm" className="w-full">
+              <Download className="mr-2" size={16} /> Installer Chrome Extension <ExternalLink className="ml-1" size={12} />
+            </Button>
+          </a>
         </GlassCard>
 
         <GlassCard className="p-6 border-white/5 bg-gradient-to-br from-accent/10 to-transparent hover:border-accent/30 transition-all">
@@ -277,7 +335,7 @@ export function Dashboard() {
             <PlayCircle className="text-accent" size={20} />
           </div>
           <p className="text-sm text-neutral-400 mb-6">Decouvrez comment utiliser Lama comme un pro en seulement 5 minutes chrono.</p>
-          <Button variant="outline" size="sm" className="w-full border-accent/30 text-accent hover:bg-accent/10">
+          <Button variant="outline" size="sm" className="w-full border-accent/30 text-accent hover:bg-accent/10" onClick={() => setShowVideo(true)}>
             <PlayCircle className="mr-2" size={16} /> Regarder le tutoriel
           </Button>
         </GlassCard>
@@ -288,9 +346,11 @@ export function Dashboard() {
             <Star className="text-warning" size={20} />
           </div>
           <p className="text-sm text-neutral-400 mb-6">Accedez a 100+ templates de messages valides par des experts du growth.</p>
-          <Button variant="outline" size="sm" className="w-full border-success/30 text-success hover:bg-success/10">
-            <BookOpen className="mr-2" size={16} /> Explorer les templates
-          </Button>
+          <Link to="/pricing">
+            <Button variant="outline" size="sm" className="w-full border-success/30 text-success hover:bg-success/10">
+              <BookOpen className="mr-2" size={16} /> Explorer les templates
+            </Button>
+          </Link>
         </GlassCard>
       </div>
 
