@@ -40,36 +40,51 @@ async function findLinkedInTab(): Promise<number | null> {
   return null;
 }
 
-async function ensureContentScript(tabId: number): Promise<boolean> {
-  // Try to ping the content script
+function waitForTabComplete(tabId: number, timeoutMs = 15000): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      clearTimeout(timer);
+      resolve();
+    };
+    const listener = (id: number, info: chrome.tabs.TabChangeInfo) => {
+      if (id === tabId && info.status === 'complete') done();
+    };
+    const timer = setTimeout(done, timeoutMs);
+    chrome.tabs.onUpdated.addListener(listener);
+  });
+}
+
+async function pingContentScript(tabId: number): Promise<boolean> {
   try {
     const response = await chrome.tabs.sendMessage(tabId, { type: 'LBP_PING' });
-    if (response?.pong) return true;
+    return !!response?.pong;
   } catch {
-    // Content script not loaded - try to inject it
+    return false;
+  }
+}
+
+async function ensureContentScript(tabId: number): Promise<boolean> {
+  // Fast path: a healthy content script answers the ping.
+  if (await pingContentScript(tabId)) return true;
+
+  // No response means the content script is missing OR its extension context
+  // was invalidated (extension reloaded while the tab stayed open). Re-injecting
+  // the crxjs loader into an invalidated context throws repeated
+  // "chrome-extension://invalid/" errors and stacks duplicate listeners.
+  // A full tab reload re-runs the manifest content script in a fresh, valid
+  // context — the only reliable recovery.
+  try {
+    await chrome.tabs.reload(tabId);
+    await waitForTabComplete(tabId);
+  } catch {
+    return false;
   }
 
-  // Programmatically inject the content script using manifest entry
-  try {
-    const manifest = chrome.runtime.getManifest();
-    const cs = manifest.content_scripts?.[0];
-    if (cs?.js?.[0]) {
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        files: cs.js,
-      });
-      await new Promise(r => setTimeout(r, 800));
-      return true;
-    }
-  } catch {
-    // Last resort: reload the tab so the content script auto-injects
-    try {
-      await chrome.tabs.reload(tabId);
-      await new Promise(r => setTimeout(r, 2500));
-      return true;
-    } catch {
-      return false;
-    }
+  // Give document_idle injection a moment, then confirm with a ping.
+  for (let i = 0; i < 6; i++) {
+    if (await pingContentScript(tabId)) return true;
+    await new Promise(r => setTimeout(r, 500));
   }
   return false;
 }

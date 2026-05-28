@@ -5,6 +5,17 @@ import { agentMode } from './agent';
 import { injectPanel, updatePanel, updatePanelTimer, updatePanelStatus, removePanel } from './panel';
 import { log, error } from '@/lib/log';
 
+declare global {
+  interface Window {
+    __lbpContentLoaded?: boolean;
+  }
+}
+
+// Guard against a second injection registering duplicate listeners / auto-start
+// loops in the same page (e.g. SPA edge cases or manual re-injection).
+const alreadyLoaded = window.__lbpContentLoaded === true;
+window.__lbpContentLoaded = true;
+
 log('Content script loaded on', window.location.href);
 
 let running = false;
@@ -186,6 +197,7 @@ function stop() {
 }
 
 // Message listener
+if (!alreadyLoaded)
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'LBP_START') {
     start(msg.payload.mode, msg.payload.reset !== false).then(() => {
@@ -243,6 +255,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 });
 
 // Auto-start check on page load
+if (!alreadyLoaded)
 (async () => {
   const session = await getSession();
   if (session.botState === 'running' && session.startedAt) {
