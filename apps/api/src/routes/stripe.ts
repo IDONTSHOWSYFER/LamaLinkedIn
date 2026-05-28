@@ -2,6 +2,7 @@ import { Router, type Router as RouterType, Request, Response } from 'express';
 import Stripe from 'stripe';
 import { prisma } from '../db/client.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { sendPaymentSuccessEmail } from '../services/email.js';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
@@ -10,11 +11,11 @@ const stripe = STRIPE_KEY && STRIPE_KEY.startsWith('sk_')
   ? new Stripe(STRIPE_KEY, { apiVersion: '2024-11-20.acacia' as any })
   : null;
 
-// Price IDs per plan
+// Price IDs per plan — keys match the web UI (premium / pro) and the env vars
+// configured in render.yaml (STRIPE_PRICE_ID, STRIPE_PRICE_PRO_ID).
 const PRICE_IDS: Record<string, string | undefined> = {
-  weekly: process.env.STRIPE_PRICE_WEEKLY_ID,
-  monthly: process.env.STRIPE_PRICE_MONTHLY_ID,
-  yearly: process.env.STRIPE_PRICE_YEARLY_ID,
+  premium: process.env.STRIPE_PRICE_ID,
+  pro: process.env.STRIPE_PRICE_PRO_ID,
 };
 
 export const stripeRouter: RouterType = Router();
@@ -70,9 +71,9 @@ stripeRouter.post('/create-checkout', requireStripe, async (req: Request, res: R
       }
     }
 
-    // Select price based on plan (weekly, monthly, yearly)
-    const selectedPlan = plan || 'monthly';
-    const priceId = PRICE_IDS[selectedPlan] || process.env.STRIPE_PRICE_MONTHLY_ID;
+    // Select price based on plan (premium / pro)
+    const selectedPlan = plan || 'premium';
+    const priceId = PRICE_IDS[selectedPlan] || process.env.STRIPE_PRICE_ID;
 
     if (!priceId) {
       res.status(400).json({ message: `Plan "${selectedPlan}" non configuré` });
@@ -171,17 +172,21 @@ stripeRouter.post('/webhook', requireStripe, async (req: Request, res: Response)
       const session = event.data.object as Stripe.Checkout.Session;
       const installId = session.metadata?.installId;
       const userId = session.metadata?.userId;
-      const plan = session.metadata?.plan || 'monthly';
+      // Both plans (premium / pro) are monthly subscriptions; renewals are
+      // handled by invoice.payment_succeeded.
       const expires = new Date();
-      if (plan === 'weekly') expires.setDate(expires.getDate() + 7);
-      else if (plan === 'yearly') expires.setFullYear(expires.getFullYear() + 1);
-      else expires.setMonth(expires.getMonth() + 1);
-      const updateData = { tier: plan, premiumExpires: expires, stripeCustomerId: session.customer as string };
+      expires.setMonth(expires.getMonth() + 1);
+      const updateData = { tier: 'premium', premiumExpires: expires, stripeCustomerId: session.customer as string };
 
+      let paidUser = null;
       if (userId) {
-        await prisma.user.update({ where: { id: userId }, data: updateData }).catch(() => {});
+        paidUser = await prisma.user.update({ where: { id: userId }, data: updateData }).catch(() => null);
       } else if (installId) {
         await prisma.user.updateMany({ where: { installId }, data: updateData });
+        paidUser = await prisma.user.findFirst({ where: { installId } });
+      }
+      if (paidUser?.email) {
+        sendPaymentSuccessEmail(paidUser.email, paidUser.name).catch(() => {});
       }
       break;
     }
