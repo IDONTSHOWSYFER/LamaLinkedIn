@@ -1,10 +1,8 @@
 export type AppMode = 'assist' | 'agent';
-export type Tier = 'free' | 'premium';
 export type BotState = 'idle' | 'starting' | 'running' | 'paused';
 
 export interface UserConfig {
   mode: AppMode;
-  tier: Tier;
   likesPerSession: number;
   commentsPerSession: number;
   sessionsPerDay: number;
@@ -23,7 +21,6 @@ export interface UserConfig {
 export interface SessionState {
   botState: BotState;
   mode: AppMode;
-  tier: Tier;
   sessionIndex: number;
   sessionsTotal: number;
   likesThisSession: number;
@@ -56,22 +53,18 @@ export interface Template {
   category: 'Réseau' | 'Prospect' | 'Expert';
   content: string;
   variables: string[];
-  premium: boolean;
 }
 
 export interface UserAuth {
   id: string;
   email: string;
   name: string;
-  tier: Tier;
-  premiumExpires: string | null;
   installId: string;
   token: string;
 }
 
 export const DEFAULT_CONFIG: UserConfig = {
   mode: 'assist',
-  tier: 'free',
   likesPerSession: 20,
   commentsPerSession: 3,
   sessionsPerDay: 1,
@@ -90,7 +83,6 @@ export const DEFAULT_CONFIG: UserConfig = {
 export const DEFAULT_SESSION: SessionState = {
   botState: 'idle',
   mode: 'assist',
-  tier: 'free',
   sessionIndex: 0,
   sessionsTotal: 1,
   likesThisSession: 0,

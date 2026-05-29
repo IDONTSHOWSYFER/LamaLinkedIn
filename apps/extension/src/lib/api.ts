@@ -47,22 +47,6 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  // Stripe
-  createCheckout: (installId: string) =>
-    request<{ url: string }>('/api/stripe/create-checkout', {
-      method: 'POST',
-      body: JSON.stringify({ installId }),
-    }),
-
-  createPortal: (installId: string) =>
-    request<{ url: string }>('/api/stripe/portal', {
-      method: 'POST',
-      body: JSON.stringify({ installId }),
-    }),
-
-  checkPremium: (installId: string) =>
-    request<{ premium: boolean; expires: string | null }>(`/api/stripe/status?installId=${installId}`),
-
   // E-book (lead magnet)
   requestEbook: (email: string) =>
     request<{ message: string }>('/api/lead', {

@@ -296,3 +296,19 @@
     backdrop-filter: blur(24px);
   }
 }
+
+/* ── Input readability guard (unlayered = wins over @layer utilities) ──
+   Several inputs hardcode the `text-white` Tailwind utility. In light mode
+   that paints white text on a light field => invisible. Because un-layered
+   rules take precedence over any @layer (incl. Tailwind utilities), this
+   forces readable text/placeholder in light mode without editing each input. */
+.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.light textarea,
+.light select {
+  color: var(--color-text-primary);
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: var(--color-text-subtle);
+}

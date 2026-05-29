@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
-import { ChevronRight, Chrome, Zap, BarChart, CheckCircle2, Shield, Star, TrendingUp, Clock, Target, Award, Users2, PlayCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { Chrome, Zap, BarChart, CheckCircle2, Shield, Star, TrendingUp, Clock, Target, Award, Users2, PlayCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
@@ -55,11 +55,11 @@ export function Home() {
                 Telecharger l'e-book gratuit
               </Button>
             </Link>
-            <Link to="/pricing">
+            <a href="https://chromewebstore.google.com/detail/mjabdegoelohpjfgcljlphoeffiafdpi" target="_blank" rel="noopener noreferrer">
               <Button variant="glass" size="lg" className="w-full sm:w-auto text-lg px-8 border-2 border-white/20 hover:border-white/40">
-                Voir Premium <ChevronRight size={20} className="ml-2" />
+                <Chrome size={20} className="mr-2" /> Installer l'extension gratuite
               </Button>
-            </Link>
+            </a>
           </div>
 
           {/* Trust Badges */}
@@ -254,7 +254,7 @@ export function Home() {
           {[
             { name: "Marie Dubois", role: "SDR chez TechFlow", text: "Depuis que j'utilise Lama, mon taux de reponse a augmente de 40%. L'interface est incroyablement intuitive et l'automatisation me fait gagner 2h par jour !", img: "https://images.unsplash.com/photo-1762341116674-784c5dbedeb1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBlcnNvbiUyMGxhcHRvcHxlbnwxfHx8fDE3NzI4OTAyNzR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral" },
             { name: "Julien Martin", role: "Fondateur, GrowthAgency", text: "Le meilleur outil de prospection Linked.In du marche. L'approche est beaucoup plus humaine que les autres bots. J'ai signe 3 gros clients ce mois-ci grace a Lama.", img: "https://images.unsplash.com/photo-1716749652823-92e7e6bf7623?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoYXBweSUyMHNhbGVzJTIwcGVyc29uJTIwY2VsZWJyYXRpbmd8ZW58MXx8fHwxNzcyOTkzNTc1fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral" },
-            { name: "Sophie Leroux", role: "Sales Executive", text: "Les templates de l'e-book couples a l'extension m'ont permis de signer 3 gros contrats ce mois-ci. ROI incroyable pour seulement 9EUR/mois !" }
+            { name: "Sophie Leroux", role: "Sales Executive", text: "Les templates de l'e-book couples a l'extension m'ont permis de signer 3 gros contrats ce mois-ci. Et le meilleur ? C'est entierement gratuit !" }
           ].map((testi, idx) => (
             <motion.div
               key={idx}
@@ -300,9 +300,9 @@ export function Home() {
         <div className="space-y-4 mb-16">
           {[
             { q: "Est-ce securise pour mon compte Linked.In ?", a: "Oui, Lama simule un comportement humain avec des limites strictes pour proteger votre compte. Nous respectons les limites de Linked.In et utilisons des delais aleatoires entre chaque action." },
-            { q: "L'extension est-elle gratuite ?", a: "Il existe une version gratuite limitee a 10 requetes/jour, et une version Premium a 9EUR/mois plus complete avec 100 requetes/jour et tous les templates." },
+            { q: "L'extension est-elle gratuite ?", a: "Oui, totalement gratuite. Toutes les fonctionnalites (modes Assiste et Agent, templates, statistiques) sont accessibles sans abonnement ni carte bancaire." },
             { q: "Ai-je besoin de Sales Navigator ?", a: "Non, Lama fonctionne avec la version standard de Linked.In, mais Sales Navigator est un plus pour acceder a plus de filtres avances." },
-            { q: "Puis-je annuler mon abonnement a tout moment ?", a: "Absolument ! Vous pouvez annuler en 1 clic depuis votre tableau de bord. Pas d'engagement, pas de frais caches." },
+            { q: "Dois-je creer un compte pour utiliser l'extension ?", a: "Le compte est optionnel : il sert uniquement a retrouver vos statistiques sur le tableau de bord. L'extension fonctionne sans inscription." },
             { q: "Quel est le delai pour voir des resultats ?", a: "La plupart de nos utilisateurs voient leurs premiers resultats dans les 7 premiers jours. En moyenne, vous pouvez esperer 20-30 nouvelles connexions qualifiees par semaine." }
           ].map((faq, idx) => (
             <motion.div
@@ -346,11 +346,11 @@ export function Home() {
                     Obtenir l'E-book Gratuit
                   </Button>
                 </Link>
-                <Link to="/pricing">
+                <a href="https://chromewebstore.google.com/detail/mjabdegoelohpjfgcljlphoeffiafdpi" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-10 border-2 border-white/30">
-                    Voir les tarifs <ArrowRight className="ml-2" />
+                    Installer l'extension <ArrowRight className="ml-2" />
                   </Button>
-                </Link>
+                </a>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-neutral-400">
                 <span className="flex items-center gap-2"><CheckCircle2 size={16} className="text-success" /> Pas de carte bancaire requise</span>

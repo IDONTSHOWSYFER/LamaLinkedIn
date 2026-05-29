@@ -1,15 +1,13 @@
 import { cn } from '@/lib/utils';
 
 interface BadgeProps {
-  variant?: 'free' | 'premium' | 'success' | 'warning' | 'danger' | 'neutral' | 'assist' | 'agent';
+  variant?: 'success' | 'warning' | 'danger' | 'neutral' | 'assist' | 'agent';
   children: React.ReactNode;
   className?: string;
 }
 
 export function Badge({ variant = 'neutral', children, className }: BadgeProps) {
   const variants = {
-    free: 'bg-muted text-muted-foreground',
-    premium: 'bg-accent text-accent-foreground',
     success: 'bg-success/15 text-success',
     warning: 'bg-warning/15 text-warning',
     danger: 'bg-danger/15 text-danger',

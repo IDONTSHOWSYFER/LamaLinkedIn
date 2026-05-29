@@ -11,26 +11,19 @@
  * et les délais réseau, éco-conception (pas de connexion inutile maintenue).
  */
 
-import path from 'path';
-import fs from 'fs';
-
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+// Clé API Resend (format `re_...`). On accepte `SMTP_PASS` en repli : la clé a
+// été stockée sous ce nom sur Render, et c'est une vraie clé Resend, pas un mot
+// de passe SMTP (on n'utilise pas SMTP ici, seulement l'API HTTP).
+const RESEND_API_KEY = process.env.RESEND_API_KEY || process.env.SMTP_PASS;
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const FROM = process.env.EMAIL_FROM || 'Lama Linked.In <noreply@lamalinked.in>';
 const REPLY_TO = process.env.EMAIL_REPLY_TO || 'heycestlelama@gmail.com';
 const SEND_TIMEOUT_MS = 10_000;
 
-interface EmailAttachment {
-  filename: string;
-  /** Contenu encodé en base64 (format attendu par Resend). */
-  content: string;
-}
-
 interface SendEmailOptions {
   to: string;
   subject: string;
   html: string;
-  attachments?: EmailAttachment[];
 }
 
 /**
@@ -59,7 +52,6 @@ async function sendEmail(opts: SendEmailOptions): Promise<void> {
         to: opts.to,
         subject: opts.subject,
         html: opts.html,
-        ...(opts.attachments?.length ? { attachments: opts.attachments } : {}),
       }),
       signal: controller.signal,
     });
@@ -105,56 +97,13 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<void> 
   });
 }
 
-export async function sendPaymentSuccessEmail(to: string, name: string): Promise<void> {
-  await sendEmail({
-    to,
-    subject: 'Paiement confirmé — Lama Linked.In Premium',
-    html: `
-      <div style="font-family: 'Montserrat', system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: #0A66C2; font-size: 24px; margin: 0;">Lama Linked.In</h1>
-        </div>
-        <h2 style="color: #0B1220;">Paiement confirmé !</h2>
-        <p style="color: #374151; line-height: 1.6;">
-          Merci ${name} ! Votre abonnement Premium est maintenant actif.
-        </p>
-        <div style="background: linear-gradient(135deg, #F4B183, #C97C5D); border-radius: 12px; padding: 20px; margin: 24px 0; color: white;">
-          <h3 style="margin-top: 0;">Vos avantages Premium :</h3>
-          <ul style="line-height: 1.8;">
-            <li>Templates illimités</li>
-            <li>Statistiques avancées</li>
-            <li>Export de données CSV/PDF</li>
-            <li>Mode Agent complet</li>
-            <li>Support prioritaire</li>
-            <li>Sans publicité</li>
-          </ul>
-        </div>
-        <p style="color: #9CA3AF; font-size: 12px; text-align: center; margin-top: 32px;">
-          Lama Linked.In — Votre assistant Linked.In intelligent<br>
-          <a href="https://lamalinked.in" style="color: #0A66C2;">lamalinked.in</a>
-        </p>
-      </div>
-    `,
-  });
-}
-
 export async function sendEbookEmail(to: string, firstName: string): Promise<void> {
   const logoUrl = 'https://raw.githubusercontent.com/IDONTSHOWSYFER/LamaLinkedIn/main/apps/extension/src/assets/icons/logo.png';
-
-  // PDF résolu relativement à la racine du process (apps/api).
-  const ebookPath = path.resolve(process.cwd(), 'public/ebook/playbook_linkedin.pdf');
-  let attachments: EmailAttachment[] | undefined;
-  if (fs.existsSync(ebookPath)) {
-    attachments = [{
-      filename: 'Playbook_LinkedIn_LamaLinkedIn.pdf',
-      content: fs.readFileSync(ebookPath).toString('base64'),
-    }];
-  }
+  const ebookUrl = `${process.env.FRONTEND_URL || 'https://lamalinked.in'}/ebook/playbook_linkedin.pdf`;
 
   await sendEmail({
     to,
     subject: 'Votre ebook LinkedIn est prêt ! 📥',
-    attachments,
     html: `
 <!DOCTYPE html>
 <html lang="fr">
@@ -181,14 +130,16 @@ export async function sendEbookEmail(to: string, firstName: string): Promise<voi
     Bonjour <strong>${firstName}</strong>,
   </p>
   <p style="color:#555770;font-size:15px;line-height:1.7;margin:0 0 32px;">
-    Merci pour votre intérêt ! Votre exemplaire du guide <em>"Les stratégies LinkedIn qui font la différence"</em> est en pièce jointe de cet email.
+    Merci pour votre intérêt ! Votre exemplaire du guide <em>"Les stratégies LinkedIn qui font la différence"</em> est prêt à être téléchargé.
   </p>
 
-  <!-- Info box -->
+  <!-- Download button -->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
-    <tr><td style="background:#f0edff;border-radius:12px;padding:20px;text-align:center;">
-      <p style="color:#1800AD;font-size:14px;font-weight:600;margin:0 0 4px;">📎 Playbook_LinkedIn_LamaLinkedIn.pdf</p>
-      <p style="color:#555770;font-size:13px;margin:0;">Retrouvez le PDF en pièce jointe ci-dessous</p>
+    <tr><td align="center">
+      <a href="${ebookUrl}" target="_blank" style="display:inline-block;padding:16px 40px;background:linear-gradient(135deg,#1800AD,#4A20E8);color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:12px;">
+        📥 Télécharger mon ebook (PDF)
+      </a>
+      <p style="color:#9CA3AF;font-size:12px;margin:12px 0 0;">Lien direct, aucune inscription requise</p>
     </td></tr>
   </table>
 
@@ -239,13 +190,13 @@ export async function sendEbookEmail(to: string, firstName: string): Promise<voi
     </td></tr>
   </table>
 
-  <!-- Upsell -->
+  <!-- CTA extension gratuite -->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;">
     <tr><td style="background:linear-gradient(135deg,#f8f6ff,#f0edff);border-radius:12px;padding:24px;text-align:center;">
-      <p style="color:#1800AD;font-size:14px;font-weight:600;margin:0 0 4px;">Envie d'aller plus loin ?</p>
-      <p style="color:#555770;font-size:13px;margin:0 0 16px;">Découvrez Lama Linked.In Premium pour automatiser votre croissance.</p>
-      <a href="https://www.lamalinked.in/#pricing" target="_blank" style="display:inline-block;padding:10px 28px;background:#ffffff;color:#1800AD;font-size:13px;font-weight:600;text-decoration:none;border-radius:8px;border:1px solid #d4c8ff;">
-        Voir les offres →
+      <p style="color:#1800AD;font-size:14px;font-weight:600;margin:0 0 4px;">Passez à l'action dès maintenant</p>
+      <p style="color:#555770;font-size:13px;margin:0 0 16px;">Installez l'extension Lama Linked.In, 100% gratuite, et appliquez le guide en un clic.</p>
+      <a href="https://chromewebstore.google.com/detail/mjabdegoelohpjfgcljlphoeffiafdpi" target="_blank" style="display:inline-block;padding:10px 28px;background:#ffffff;color:#1800AD;font-size:13px;font-weight:600;text-decoration:none;border-radius:8px;border:1px solid #d4c8ff;">
+        Installer l'extension gratuite →
       </a>
     </td></tr>
   </table>

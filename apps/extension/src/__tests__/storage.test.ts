@@ -35,7 +35,6 @@ vi.stubGlobal('chrome', chromeMock);
 describe('Types', () => {
   it('DEFAULT_CONFIG has correct shape', () => {
     expect(DEFAULT_CONFIG.mode).toBe('assist');
-    expect(DEFAULT_CONFIG.tier).toBe('free');
     expect(DEFAULT_CONFIG.likesPerSession).toBe(20);
     expect(DEFAULT_CONFIG.commentsPerSession).toBe(3);
     expect(DEFAULT_CONFIG.botSpeed).toBe(3);
@@ -54,10 +53,6 @@ describe('Types', () => {
 describe('Config defaults', () => {
   it('mode defaults to assist', () => {
     expect(DEFAULT_CONFIG.mode).toBe('assist');
-  });
-
-  it('tier defaults to free', () => {
-    expect(DEFAULT_CONFIG.tier).toBe('free');
   });
 
   it('daily limits are sensible', () => {

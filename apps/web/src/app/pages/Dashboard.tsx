@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Settings, CreditCard, Activity, Users, Download, Star, TrendingUp, Zap, PlayCircle, BookOpen, Target, BarChart3, Calendar, ExternalLink, X } from 'lucide-react';
+import { Settings, Activity, Users, Download, Star, TrendingUp, Zap, PlayCircle, BookOpen, Target, BarChart3, Calendar, ExternalLink, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { motion } from 'motion/react';
@@ -130,16 +130,12 @@ export function Dashboard() {
           <p className="text-neutral-400">Voici un resume de votre activite Linked.In</p>
         </div>
         <div className="flex items-center gap-4">
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${
-            user?.tier === 'pro' ? 'bg-accent/20 text-accent border-accent/30' :
-            user?.tier === 'premium' ? 'bg-primary/20 text-primary border-primary/30' :
-            'bg-white/10 text-neutral-300 border-white/20'
-          }`}>
-            <Star size={14} fill="currentColor" /> {user?.tier ? user.tier.charAt(0).toUpperCase() + user.tier.slice(1) : 'Free'}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border bg-success/20 text-success border-success/30">
+            <Star size={14} fill="currentColor" /> Gratuit
           </span>
           <Link to="/account">
             <Button variant="outline" size="sm">
-              <CreditCard className="mr-2" size={16} /> Gerer l'abonnement
+              <Settings className="mr-2" size={16} /> Mon compte
             </Button>
           </Link>
         </div>
@@ -170,7 +166,7 @@ export function Dashboard() {
       </div>
 
       {/* Onboarding */}
-      {user?.tier === 'free' && (
+      {user && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -342,15 +338,15 @@ export function Dashboard() {
 
         <GlassCard className="p-6 border-white/5 bg-gradient-to-br from-success/10 to-transparent hover:border-success/30 transition-all">
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-adaptive font-semibold">Templates Premium</h3>
+            <h3 className="text-adaptive font-semibold">Templates de messages</h3>
             <Star className="text-warning" size={20} />
           </div>
-          <p className="text-sm text-neutral-400 mb-6">Accedez a 100+ templates de messages valides par des experts du growth.</p>
-          <Link to="/pricing">
+          <p className="text-sm text-neutral-400 mb-6">Des dizaines de templates de messages prets a l'emploi, directement dans l'extension. 100% gratuit.</p>
+          <a href={CHROME_EXTENSION_URL} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="sm" className="w-full border-success/30 text-success hover:bg-success/10">
-              <BookOpen className="mr-2" size={16} /> Explorer les templates
+              <BookOpen className="mr-2" size={16} /> Ouvrir dans l'extension
             </Button>
-          </Link>
+          </a>
         </GlassCard>
       </div>
 
@@ -399,23 +395,23 @@ export function Dashboard() {
         </GlassCard>
       </div>
 
-      {/* Upsell */}
-      {user?.tier === 'free' && (
+      {/* Tip */}
+      {user && (
         <GlassCard className="p-8 bg-gradient-to-r from-accent/10 to-primary/10 border-accent/20">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 text-accent text-xs font-bold mb-3">
-                <Zap size={12} /> ASTUCE PRO
+                <Zap size={12} /> ASTUCE
               </div>
               <h3 className="text-2xl font-bold text-adaptive mb-2">Boostez vos resultats de 3x</h3>
               <p className="text-neutral-300 mb-4">
-                Les utilisateurs qui personnalisent leurs templates obtiennent en moyenne <span className="text-adaptive font-bold">3x plus de reponses</span>. Passez a Premium pour debloquer tous les templates.
+                Les utilisateurs qui personnalisent leurs templates obtiennent en moyenne <span className="text-adaptive font-bold">3x plus de reponses</span>. Editez vos templates directement dans l'extension.
               </p>
-              <Link to="/pricing">
+              <a href={CHROME_EXTENSION_URL} target="_blank" rel="noopener noreferrer">
                 <Button size="sm" className="bg-accent hover:bg-accent/90 text-neutral-900 font-semibold">
-                  Passer a Premium <Star className="ml-2" size={16} />
+                  Ouvrir l'extension <Star className="ml-2" size={16} />
                 </Button>
-              </Link>
+              </a>
             </div>
             <div className="flex-shrink-0">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center border-4 border-accent/30">

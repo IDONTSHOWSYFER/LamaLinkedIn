@@ -3,7 +3,7 @@ import type { SessionState } from '@/types';
 import { AppMode, BotState, UserConfig, ActionEvent, DEFAULT_CONFIG, DEFAULT_SESSION } from '@/types';
 import { getConfig, setConfig, getSession, setSession, getEvents, getInstallId } from '@/lib/storage';
 
-type TabId = 'launch' | 'run' | 'suivi' | 'templates' | 'settings' | 'upgrade';
+type TabId = 'launch' | 'run' | 'suivi' | 'templates' | 'settings';
 
 interface Store {
   config: UserConfig;

@@ -13,8 +13,6 @@ async function main() {
       email: 'demo@lamalinked.in',
       password,
       name: 'Demo User',
-      tier: 'premium',
-      premiumExpires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     },
   });
 

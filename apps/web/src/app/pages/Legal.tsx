@@ -1,4 +1,4 @@
-import { Shield, Mail, Trash2, FileText, Lock, CreditCard, Cookie, Eye, Scale, Users } from 'lucide-react';
+import { Shield, Mail, Trash2, FileText, Lock, Cookie, Eye, Scale, Users } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { motion } from 'motion/react';
@@ -67,9 +67,8 @@ export function Legal() {
                     Lama s'engage a minimiser la collecte de donnees personnelles. Nous ne stockons que l'adresse email necessaire pour :
                   </p>
                   <ul className="list-disc list-inside space-y-2 pl-4">
-                    <li>La gestion de votre compte utilisateur</li>
-                    <li>La gestion de votre abonnement Premium</li>
-                    <li>L'envoi des factures et confirmations de paiement</li>
+                    <li>La gestion de votre compte utilisateur (gratuit)</li>
+                    <li>L'affichage de vos statistiques d'activite dans votre tableau de bord</li>
                     <li>L'envoi de l'e-book gratuit (avec votre consentement explicite)</li>
                   </ul>
                   <p className="text-white font-semibold">
@@ -125,9 +124,9 @@ export function Legal() {
                     </div>
                     <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                       <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
-                        <CreditCard size={16} className="text-primary" /> Paiements securises
+                        <Shield size={16} className="text-primary" /> Hebergement securise
                       </h4>
-                      <p className="text-sm">Geres par Stripe, certifie PCI-DSS</p>
+                      <p className="text-sm">Donnees hebergees sur une infrastructure conforme RGPD (UE)</p>
                     </div>
                   </div>
                 </div>
@@ -179,41 +178,33 @@ export function Legal() {
                 <div className="space-y-4 text-neutral-300 leading-relaxed">
                   <h3 className="text-lg font-semibold text-white">1. Objet</h3>
                   <p>
-                    Les presentes CGV regissent la vente des abonnements Lama Linked.In (version Premium et Pro) proposes par Lama SAS.
+                    Les presentes conditions regissent l'utilisation de Lama Linked.In, une extension Chrome et un service web proposes <span className="text-white font-semibold">gratuitement</span>.
                   </p>
 
-                  <h3 className="text-lg font-semibold text-white mt-6">2. Prix et Paiement</h3>
-                  <ul className="list-disc list-inside space-y-2 pl-4">
-                    <li>Les prix sont indiques en Euros, TTC</li>
-                    <li>Le paiement s'effectue par carte bancaire via Stripe</li>
-                    <li>L'abonnement est renouvele automatiquement chaque mois</li>
-                    <li>Vous pouvez annuler a tout moment depuis votre tableau de bord</li>
-                  </ul>
-
-                  <h3 className="text-lg font-semibold text-white mt-6">3. Droit de retractation</h3>
-                  <p>
-                    Conformement a la legislation en vigueur, vous disposez d'un delai de 14 jours pour vous retracter, a compter de la souscription de votre abonnement.
-                  </p>
-
-                  <h3 className="text-lg font-semibold text-white mt-6">4. Garantie satisfait ou rembourse</h3>
+                  <h3 className="text-lg font-semibold text-white mt-6">2. Gratuite du service</h3>
                   <div className="p-5 rounded-lg bg-success/10 border border-success/30">
-                    <p className="text-white font-semibold mb-2">Garantie 14 jours</p>
+                    <p className="text-white font-semibold mb-2">100% gratuit</p>
                     <p className="text-sm">
-                      Si vous n'etes pas satisfait de Lama dans les 14 premiers jours, nous vous remboursons integralement. Sans poser de question.
+                      Lama est entierement gratuit. Aucun paiement, aucun abonnement et aucune carte bancaire ne vous seront jamais demandes. Toutes les fonctionnalites (mode Assiste, mode Agent, statistiques, templates) sont accessibles sans frais.
                     </p>
                   </div>
 
-                  <h3 className="text-lg font-semibold text-white mt-6">5. Resiliation</h3>
+                  <h3 className="text-lg font-semibold text-white mt-6">3. Compte utilisateur</h3>
                   <p>
-                    Vous pouvez resilier votre abonnement a tout moment depuis votre tableau de bord. La resiliation prend effet a la fin de la periode de facturation en cours.
+                    La creation d'un compte est facultative et sert uniquement a synchroniser vos statistiques d'activite dans votre tableau de bord. Vous pouvez supprimer votre compte et vos donnees a tout moment depuis la page Mon Compte.
                   </p>
 
-                  <h3 className="text-lg font-semibold text-white mt-6">6. Responsabilites</h3>
+                  <h3 className="text-lg font-semibold text-white mt-6">4. Responsabilites</h3>
                   <p>
                     Lama est un outil d'automatisation qui respecte les limites imposees par Linked.In. L'utilisateur reste seul responsable de l'usage qu'il fait du service.
                   </p>
                   <p className="text-warning font-semibold">
                     Nous declinons toute responsabilite en cas de suspension ou bannissement de votre compte Linked.In resultant d'un usage abusif de notre extension.
+                  </p>
+
+                  <h3 className="text-lg font-semibold text-white mt-6">5. Service fourni en l'etat</h3>
+                  <p>
+                    Le service etant gratuit, il est fourni "en l'etat", sans garantie de disponibilite continue. Nous nous efforcons d'assurer le bon fonctionnement de Lama mais ne saurions etre tenus responsables d'une interruption temporaire du service.
                   </p>
                 </div>
               </section>
@@ -235,10 +226,11 @@ export function Legal() {
 
                   <h3 className="text-lg font-semibold text-white mt-6">2. Limites d'utilisation</h3>
                   <div className="p-5 rounded-lg bg-white/5 border border-white/10">
+                    <p className="text-sm mb-2">Lama est gratuit et accessible a tous, sans quota commercial. Pour proteger votre compte et respecter les regles de Linked.In, un usage raisonnable est applique :</p>
                     <ul className="space-y-2 text-sm">
-                      <li>- Plan Free : 10 requetes/jour maximum</li>
-                      <li>- Plan Premium : 100 requetes/jour maximum</li>
-                      <li>- Plan Pro : Illimite (dans les limites Linked.In)</li>
+                      <li>- Des limites anti-abus protegent l'infrastructure et votre compte</li>
+                      <li>- Les actions respectent les cadences recommandees par Linked.In</li>
+                      <li>- Aucune distinction de plan : toutes les fonctionnalites sont gratuites</li>
                     </ul>
                   </div>
 
@@ -276,7 +268,7 @@ export function Legal() {
                       <ul className="text-sm space-y-1 pl-4">
                         <li>- Session utilisateur (authentification)</li>
                         <li>- Preferences de langue</li>
-                        <li>- Panier d'achat</li>
+                        <li>- Preferences de theme (clair/sombre)</li>
                       </ul>
                     </div>
 

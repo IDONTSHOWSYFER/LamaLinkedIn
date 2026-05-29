@@ -4,10 +4,9 @@ import { RunTab } from './tabs/RunTab';
 import { SuiviTab } from './tabs/SuiviTab';
 import { TemplatesTab } from './tabs/TemplatesTab';
 import { SettingsTab } from './tabs/SettingsTab';
-import { UpgradeTab } from './tabs/UpgradeTab';
 import { ModeToggle } from './components/ModeToggle';
 import { useStore } from './store';
-import { Play, BarChart3, FileText, Settings, Crown, Sun, Moon } from 'lucide-react';
+import { Play, BarChart3, FileText, Settings, Sun, Moon } from 'lucide-react';
 import logoImg from '@/assets/icons/logo.png';
 
 export function App() {
@@ -76,7 +75,6 @@ export function App() {
             { id: 'suivi', icon: BarChart3, label: 'Suivi' },
             { id: 'templates', icon: FileText, label: 'Templates' },
             { id: 'settings', icon: Settings, label: 'Réglages' },
-            { id: 'upgrade', icon: Crown, label: 'Premium' },
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
@@ -98,7 +96,6 @@ export function App() {
           {activeTab === 'suivi' && <SuiviTab />}
           {activeTab === 'templates' && <TemplatesTab />}
           {activeTab === 'settings' && <SettingsTab />}
-          {activeTab === 'upgrade' && <UpgradeTab />}
         </div>
       </div>
     </div>

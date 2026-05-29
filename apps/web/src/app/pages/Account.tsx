@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
 import { motion } from 'motion/react';
-import { User, Mail, Shield, CreditCard, Star, Trash2, Lock, ArrowRight, CheckCircle, AlertTriangle, Zap } from 'lucide-react';
+import { User, Mail, Shield, Trash2, Lock, CheckCircle, AlertTriangle, Zap } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useAuth } from '../lib/auth';
@@ -9,7 +8,7 @@ import { api } from '../lib/api';
 
 export function Account() {
   const { user, updateProfile, changePassword, logout } = useAuth();
-  const [activeSection, setActiveSection] = useState<'profile' | 'password' | 'subscription' | 'danger'>('profile');
+  const [activeSection, setActiveSection] = useState<'profile' | 'password' | 'danger'>('profile');
 
   // Profile form
   const [name, setName] = useState(user?.name || '');
@@ -81,21 +80,11 @@ export function Account() {
     }
   };
 
-  const handleManageBilling = async () => {
-    try {
-      const data = await api<{ url: string }>('/stripe/portal', { method: 'POST' });
-      window.location.href = data.url;
-    } catch {
-      // Fallback
-    }
-  };
-
   if (!user) return null;
 
   const sections = [
     { id: 'profile' as const, label: 'Profil', icon: <User size={18} /> },
     { id: 'password' as const, label: 'Mot de passe', icon: <Lock size={18} /> },
-    { id: 'subscription' as const, label: 'Abonnement', icon: <CreditCard size={18} /> },
     { id: 'danger' as const, label: 'Zone danger', icon: <AlertTriangle size={18} /> },
   ];
 
@@ -106,7 +95,7 @@ export function Account() {
         animate={{ opacity: 1, y: 0 }}
       >
         <h1 className="text-3xl md:text-4xl font-bold text-adaptive mb-2">Mon Compte</h1>
-        <p className="text-neutral-400 mb-10">Gerez vos informations personnelles et votre abonnement</p>
+        <p className="text-neutral-400 mb-10">Gerez vos informations personnelles</p>
 
         <div className="grid md:grid-cols-4 gap-8">
           {/* Sidebar */}
@@ -119,9 +108,7 @@ export function Account() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-adaptive truncate">{user.name}</p>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium capitalize">
-                    <Star size={10} fill="currentColor" /> {user.tier}
-                  </span>
+                  <p className="text-xs text-adaptive-muted truncate">{user.email}</p>
                 </div>
               </div>
 
@@ -285,85 +272,6 @@ export function Account() {
                       )}
                     </Button>
                   </form>
-                </GlassCard>
-              )}
-
-              {/* Subscription Section */}
-              {activeSection === 'subscription' && (
-                <GlassCard className="p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                      <CreditCard className="text-success" size={20} />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-adaptive">Abonnement</h2>
-                      <p className="text-sm text-neutral-400">Gerez votre plan et votre facturation</p>
-                    </div>
-                  </div>
-
-                  {/* Current Plan */}
-                  <GlassCard className="p-6 mb-6 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-bold text-adaptive capitalize">Plan {user.tier}</h3>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            user.subscriptionStatus === 'active'
-                              ? 'bg-success/20 text-success'
-                              : user.subscriptionStatus === 'canceled'
-                              ? 'bg-warning/20 text-warning'
-                              : 'bg-neutral-700 text-neutral-300'
-                          }`}>
-                            {user.subscriptionStatus === 'active' ? 'Actif' :
-                             user.subscriptionStatus === 'canceled' ? 'Annule' : 'Gratuit'}
-                          </span>
-                        </div>
-                        {user.subscriptionEnd && (
-                          <p className="text-sm text-neutral-400">
-                            {user.subscriptionStatus === 'canceled' ? 'Expire le' : 'Prochain renouvellement'} :{' '}
-                            {new Date(user.subscriptionEnd).toLocaleDateString('fr-FR')}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="text-3xl font-extrabold text-adaptive">
-                          {user.tier === 'free' ? '0' : user.tier === 'premium' ? '9' : '19'}EUR
-                        </div>
-                        <div className="text-xs text-neutral-400">/mois</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-sm text-neutral-300 mb-1">
-                      <CheckCircle size={16} className="text-success" />
-                      {user.tier === 'free' ? '10 requetes/jour' : user.tier === 'premium' ? '100 requetes/jour' : 'Requetes illimitees'}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-neutral-300">
-                      <CheckCircle size={16} className="text-success" />
-                      {user.tier === 'free' ? '3 templates de base' : 'Templates illimites'}
-                    </div>
-                  </GlassCard>
-
-                  {user.tier === 'free' ? (
-                    <div className="space-y-4">
-                      <p className="text-neutral-400">
-                        Passez a Premium pour debloquer toutes les fonctionnalites et accelerer votre prospection.
-                      </p>
-                      <Link to="/pricing">
-                        <Button size="lg" className="w-full shadow-[0_0_20px_rgba(10,102,194,0.3)]">
-                          <Star className="mr-2" size={18} /> Passer a Premium <ArrowRight className="ml-2" size={18} />
-                        </Button>
-                      </Link>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <Button variant="outline" onClick={handleManageBilling} className="w-full">
-                        <CreditCard className="mr-2" size={16} /> Gerer la facturation via Stripe
-                      </Button>
-                      <p className="text-xs text-neutral-500 text-center">
-                        Vous serez redirige vers le portail de facturation Stripe pour modifier votre abonnement, mettre a jour votre carte ou telecharger vos factures.
-                      </p>
-                    </div>
-                  )}
                 </GlassCard>
               )}
 

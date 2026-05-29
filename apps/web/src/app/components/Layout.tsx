@@ -47,7 +47,6 @@ export function Layout() {
 
           <div className="hidden md:flex items-center gap-6">
             <Link to="/lead-magnet" className="text-sm font-medium text-adaptive-muted hover:text-adaptive transition-colors">Ressources</Link>
-            <Link to="/pricing" className="text-sm font-medium text-adaptive-muted hover:text-adaptive transition-colors">Tarifs</Link>
 
             {/* Theme Toggle */}
             <div className="relative">
@@ -101,9 +100,6 @@ export function Layout() {
                     <div className="px-3 py-2 border-b border-white/10 mb-1">
                       <p className="text-sm font-medium text-adaptive truncate">{user.name}</p>
                       <p className="text-xs text-adaptive-muted truncate">{user.email}</p>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium mt-1 capitalize">
-                        {user.tier}
-                      </span>
                     </div>
                     <Link
                       to="/dashboard"
@@ -157,7 +153,6 @@ export function Layout() {
         {isMenuOpen && (
           <div className="md:hidden absolute top-16 left-0 w-full glass-nav border-t border-adaptive py-4 px-4 flex flex-col gap-4">
             <Link to="/lead-magnet" onClick={() => setIsMenuOpen(false)} className="text-adaptive-muted hover:text-adaptive">Ressources</Link>
-            <Link to="/pricing" onClick={() => setIsMenuOpen(false)} className="text-adaptive-muted hover:text-adaptive">Tarifs</Link>
 
             {/* Mobile Theme Selector */}
             <div className="border-t border-adaptive pt-4 space-y-2">
@@ -230,9 +225,8 @@ export function Layout() {
             <span>&copy; 2026 Lama. Tous droits reserves.</span>
           </div>
           <div className="flex gap-6">
-            <Link to="/pricing" className="hover:text-neutral-50 dark:hover:text-white transition-colors">Tarifs</Link>
             <Link to="/legal" className="hover:text-neutral-50 dark:hover:text-white transition-colors">Mentions legales & RGPD</Link>
-            <a href="#" className="hover:text-neutral-50 dark:hover:text-white transition-colors">Contact</a>
+            <a href="mailto:heycestlelama@gmail.com" className="hover:text-neutral-50 dark:hover:text-white transition-colors">Contact</a>
           </div>
         </div>
       </footer>

@@ -17,16 +17,6 @@ services:
         value: "3001"
       - key: FRONTEND_URL
         sync: false
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
-      - key: STRIPE_PRICE_WEEKLY_ID
-        sync: false
-      - key: STRIPE_PRICE_MONTHLY_ID
-        sync: false
-      - key: STRIPE_PRICE_YEARLY_ID
-        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM

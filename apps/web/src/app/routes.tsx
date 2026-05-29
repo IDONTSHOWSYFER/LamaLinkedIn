@@ -3,8 +3,6 @@ import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { LeadMagnet } from "./pages/LeadMagnet";
 import { ThankYou } from "./pages/ThankYou";
-import { Pricing } from "./pages/Pricing";
-import { Checkout } from "./pages/Checkout";
 import { Dashboard } from "./pages/Dashboard";
 import { Legal } from "./pages/Legal";
 import { Login } from "./pages/Login";
@@ -22,8 +20,6 @@ export const router = createBrowserRouter([
       { index: true, Component: Home },
       { path: "lead-magnet", Component: LeadMagnet },
       { path: "thank-you", Component: ThankYou },
-      { path: "pricing", Component: Pricing },
-      { path: "checkout", Component: Checkout },
       { path: "login", Component: Login },
       { path: "register", Component: Register },
       { path: "forgot-password", Component: ForgotPassword },

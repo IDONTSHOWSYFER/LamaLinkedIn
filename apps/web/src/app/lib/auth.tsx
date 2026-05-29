@@ -6,9 +6,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  tier: 'free' | 'premium' | 'pro';
-  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | null;
-  subscriptionEnd?: string | null;
   createdAt: string;
 }
 

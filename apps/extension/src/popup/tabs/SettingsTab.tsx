@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Clock, Target, Zap, Save, Upload, Crown, ExternalLink, User, CreditCard, BarChart3, BookOpen, Mail } from 'lucide-react';
+import { Clock, Target, Zap, Save, Upload, ExternalLink, User, BarChart3, BookOpen, Mail } from 'lucide-react';
 import { Button, Card, Slider, Toggle } from '@/components/core';
 import { useStore } from '../store';
 import { api } from '@/lib/api';
@@ -20,8 +20,6 @@ export function SettingsTab() {
   const update = <K extends keyof typeof local>(key: K, val: typeof local[K]) => {
     setLocal(prev => ({ ...prev, [key]: val }));
   };
-
-  const isPremium = config.tier === 'premium';
 
   const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -119,7 +117,6 @@ export function SettingsTab() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-foreground">Messages personnalisés</span>
-                  {!isPremium && <Crown className="w-3.5 h-3.5 text-accent" />}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Importez un CSV avec vos réponses (1 message par ligne).
@@ -127,16 +124,11 @@ export function SettingsTab() {
                 </p>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => isPremium ? csvRef.current?.click() : setCsvMsg('Fonctionnalité Premium')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium transition-all ${
-                      isPremium
-                        ? 'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20'
-                        : 'bg-muted text-muted-foreground border border-border'
-                    }`}
+                    onClick={() => csvRef.current?.click()}
+                    className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium transition-all bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
                   >
                     <Upload className="w-3 h-3" />
                     Importer CSV
-                    {!isPremium && <Crown className="w-3 h-3 text-accent" />}
                   </button>
                   {local.customMessages.length > 0 && (
                     <button
@@ -230,12 +222,12 @@ export function SettingsTab() {
               <ExternalLink className="w-3 h-3 text-muted-foreground" />
             </button>
             <button
-              onClick={() => chrome.tabs.create({ url: `${SITE_URL}/account` })}
+              onClick={() => chrome.tabs.create({ url: 'mailto:heycestlelama@gmail.com' })}
               className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-xs font-medium bg-background-elevated hover:bg-muted border border-border transition-all"
             >
               <span className="flex items-center gap-2 text-foreground">
-                <CreditCard className="w-3.5 h-3.5 text-accent" />
-                Gérer mon abonnement
+                <Mail className="w-3.5 h-3.5 text-accent" />
+                Contacter le support
               </span>
               <ExternalLink className="w-3 h-3 text-muted-foreground" />
             </button>

@@ -88,7 +88,7 @@ authRouter.post('/register', registerLimiter, async (req: Request, res: Response
 
     res.status(201).json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, tier: user.tier },
+      user: { id: user.id, email: user.email, name: user.name },
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -123,8 +123,6 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response): Pro
         id: user.id,
         email: user.email,
         name: user.name,
-        tier: user.tier,
-        premiumExpires: user.premiumExpires,
       },
     });
   } catch (err) {
@@ -141,7 +139,7 @@ authRouter.get('/me', authMiddleware, async (req: AuthRequest, res: Response): P
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, email: true, name: true, tier: true, premiumExpires: true, createdAt: true },
+      select: { id: true, email: true, name: true, createdAt: true },
     });
     if (!user) {
       res.status(404).json({ message: 'Utilisateur non trouvé' });
@@ -170,7 +168,7 @@ authRouter.put('/me', authMiddleware, async (req: AuthRequest, res: Response): P
     const user = await prisma.user.update({
       where: { id: req.userId },
       data,
-      select: { id: true, email: true, name: true, tier: true, premiumExpires: true, createdAt: true },
+      select: { id: true, email: true, name: true, createdAt: true },
     });
 
     res.json(user);

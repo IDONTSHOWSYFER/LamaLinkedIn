@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
-import { Download, CheckCircle, ArrowRight, Zap, Star, Sparkles, Gift, Clock, TrendingUp, Mail } from 'lucide-react';
+import { Download, CheckCircle, ArrowRight, Zap, Star, Sparkles, Clock, TrendingUp, Mail, Chrome } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 
@@ -38,14 +38,15 @@ export function ThankYou() {
           </GlassCard>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-2 border-success text-success hover:bg-success/10 hover:text-white text-lg px-8"
-              onClick={() => alert("Telechargement du PDF...")}
-            >
-              <Download className="mr-2" size={20} /> Telecharger l'e-book maintenant
-            </Button>
+            <a href="/ebook/playbook_linkedin.pdf" download>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-2 border-success text-success hover:bg-success/10 hover:text-white text-lg px-8"
+              >
+                <Download className="mr-2" size={20} /> Telecharger l'e-book maintenant
+              </Button>
+            </a>
           </div>
         </div>
 
@@ -74,34 +75,34 @@ export function ThankYou() {
           </div>
         </GlassCard>
 
-        {/* Upsell Section - Premium Offer */}
+        {/* Install Extension Section - 100% Free */}
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 blur-3xl rounded-3xl" />
           <GlassCard className="relative p-10 md:p-12 border-2 border-accent/30 overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-              <Zap size={160} />
+              <Chrome size={160} />
             </div>
 
             <div className="relative z-10">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 text-accent text-sm font-bold mb-6 border border-accent/30">
-                <Sparkles size={16} /> OFFRE EXCLUSIVE
+                <Sparkles size={16} /> 100% GRATUIT
               </div>
 
               <h2 className="text-3xl md:text-4xl font-bold text-adaptive mb-4">
-                Passez a la vitesse superieure avec <span className="text-accent">Lama Premium</span>
+                Passez a la vitesse superieure avec <span className="text-accent">l'extension Lama</span>
               </h2>
               <p className="text-xl text-neutral-300 mb-8 max-w-2xl">
-                Les scripts c'est bien, mais envoyer les bons messages aux bonnes personnes au bon moment de maniere <span className="text-adaptive font-semibold">semi-automatisee</span>, c'est encore mieux.
+                Les scripts c'est bien, mais envoyer les bons messages aux bonnes personnes au bon moment directement depuis LinkedIn, c'est encore mieux. <span className="text-adaptive font-semibold">Et c'est entierement gratuit.</span>
               </p>
 
               {/* Benefits Grid */}
               <div className="grid md:grid-cols-2 gap-6 mb-8">
                 {[
-                  { icon: <Star className="text-warning" size={24} />, title: 'Bibliotheque de templates Premium', desc: '100+ scripts valides par des experts' },
-                  { icon: <Zap className="text-accent" size={24} />, title: 'Automatisation intelligente', desc: 'Visites de profils et suivis automatises' },
-                  { icon: <TrendingUp className="text-success" size={24} />, title: 'Analytics avances', desc: 'Trackez vos conversions en temps reel' },
-                  { icon: <Clock className="text-primary" size={24} />, title: 'Gagnez 2h par jour', desc: 'Laissez Lama travailler pour vous' }
+                  { icon: <Star className="text-warning" size={24} />, title: 'Bibliotheque de templates', desc: "Des dizaines de scripts prets a l'emploi" },
+                  { icon: <Zap className="text-accent" size={24} />, title: 'Mode Agent semi-automatise', desc: 'Visites de profils et suivis assistes' },
+                  { icon: <TrendingUp className="text-success" size={24} />, title: 'Statistiques en temps reel', desc: 'Suivez votre activite et vos resultats' },
+                  { icon: <Clock className="text-primary" size={24} />, title: 'Gagnez du temps chaque jour', desc: 'Laissez Lama vous assister au quotidien' }
                 ].map((benefit, idx) => (
                   <div key={idx} className="flex gap-4 items-start p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
                     <div className="shrink-0 mt-1">{benefit.icon}</div>
@@ -113,58 +114,24 @@ export function ThankYou() {
                 ))}
               </div>
 
-              {/* Pricing Highlight */}
-              <GlassCard className="p-6 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30 mb-8">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-5xl font-extrabold text-adaptive">9EUR</span>
-                      <span className="text-neutral-400">/mois</span>
-                      <span className="ml-3 px-3 py-1 rounded-full bg-success/20 text-success text-xs font-bold">
-                        -20% aujourd'hui seulement
-                      </span>
-                    </div>
-                    <p className="text-neutral-400 text-sm">Annulable a tout moment. Pas d'engagement.</p>
-                  </div>
-                  <div className="flex flex-col gap-2 text-sm text-neutral-300">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={16} className="text-success" /> 100 requetes/jour
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={16} className="text-success" /> Templates illimites
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={16} className="text-success" /> Support prioritaire
-                    </div>
-                  </div>
-                </div>
-              </GlassCard>
-
               {/* CTA */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/checkout?plan=premium" className="flex-1">
+                <a
+                  href="https://chromewebstore.google.com/detail/mjabdegoelohpjfgcljlphoeffiafdpi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1"
+                >
                   <Button size="lg" className="w-full text-lg shadow-[0_0_30px_rgba(168,85,247,0.4)] bg-accent hover:bg-accent/90 text-neutral-900 font-bold">
-                    Voir l'offre Premium <ArrowRight className="ml-2" size={20} />
+                    <Chrome className="mr-2" size={20} /> Installer l'extension gratuite
                   </Button>
-                </Link>
+                </a>
                 <Link to="/dashboard" className="flex-1">
                   <Button variant="outline" size="lg" className="w-full text-lg border-2 border-white/20">
-                    Continuer en version gratuite
+                    Voir mon tableau de bord <ArrowRight className="ml-2" size={20} />
                   </Button>
                 </Link>
               </div>
-
-              {/* Timer */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1 }}
-                className="mt-6 text-center"
-              >
-                <p className="text-sm text-accent flex items-center justify-center gap-2">
-                  <Gift size={16} /> <span>Offre valable pendant les prochaines 24h</span>
-                </p>
-              </motion.div>
             </div>
           </GlassCard>
         </div>
@@ -176,10 +143,10 @@ export function ThankYou() {
           transition={{ delay: 0.8 }}
         >
           <GlassCard className="p-8 bg-white/5">
-            <h3 className="text-center text-xl font-bold text-adaptive mb-6">Ce qu'ils disent de Lama Premium</h3>
+            <h3 className="text-center text-xl font-bold text-adaptive mb-6">Ce qu'ils disent de Lama</h3>
             <div className="grid md:grid-cols-2 gap-6">
               {[
-                { name: 'Thomas L.', role: 'SDR', text: "J'ai genere 23 RDV qualifies en 3 semaines. Le ROI est incroyable pour 9EUR/mois !", rating: 5 },
+                { name: 'Thomas L.', role: 'SDR', text: "J'ai genere 23 RDV qualifies en 3 semaines. Et l'outil est 100% gratuit, c'est dingue !", rating: 5 },
                 { name: 'Claire M.', role: 'Freelance', text: "L'automatisation me fait gagner 2h par jour. Je peux enfin me concentrer sur mes clients.", rating: 5 }
               ].map((testimonial, i) => (
                 <div key={i} className="p-5 rounded-lg bg-white/5 border border-white/10">
