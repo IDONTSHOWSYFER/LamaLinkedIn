@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1280px; height: 800px; background: linear-gradient(160deg, #0B1220 0%, #111d35 100%); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+.container { display: flex; gap: 60px; padding: 40px 80px; align-items: center; }
+
+.text-side { max-width: 480px; }
+.badge { display: inline-block; background: rgba(52,211,153,0.1); color: #34D399; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 16px; border: 1px solid rgba(52,211,153,0.2); }
+.text-side h1 { color: white; font-size: 40px; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+.text-side .hl { color: #F4B183; }
+.text-side p { color: rgba(255,255,255,0.5); font-size: 16px; line-height: 1.6; margin-bottom: 28px; }
+
+/* Templates card */
+.templates-frame {
+  width: 440px; flex-shrink: 0;
+  background: #0f1729; border-radius: 16px;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.tf-header {
+  padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.tf-title { color: white; font-size: 16px; font-weight: 600; }
+.tf-add {
+  background: #0A66C2; color: white; border: none; padding: 6px 14px;
+  border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+
+.template-list { padding: 12px; }
+.template-item {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; padding: 16px; margin-bottom: 10px;
+}
+.template-item:hover { border-color: rgba(10,102,194,0.3); }
+.ti-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ti-name { color: white; font-size: 14px; font-weight: 600; }
+.ti-badge {
+  font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: 600;
+}
+.ti-badge.pro { background: rgba(10,102,194,0.2); color: #3b9cf5; }
+.ti-badge.friendly { background: rgba(244,177,131,0.2); color: #F4B183; }
+.ti-badge.expert { background: rgba(52,211,153,0.2); color: #34D399; }
+.ti-text { color: rgba(255,255,255,0.5); font-size: 12px; line-height: 1.5; }
+
+/* AI preview */
+.ai-preview {
+  margin: 12px; padding: 16px; background: rgba(10,102,194,0.08);
+  border: 1px solid rgba(10,102,194,0.2); border-radius: 12px;
+}
+.ai-label { color: #3b9cf5; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.ai-text { color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.5; font-style: italic; }
+.ai-cursor { display: inline-block; width: 2px; height: 14px; background: #0A66C2; margin-left: 2px; animation: blink 1s infinite; }
+@keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="text-side">
+    <div class="badge">📝 Templates IA</div>
+    <h1>Des commentaires <span class="hl">personnalisés</span> par l'IA</h1>
+    <p>Créez vos templates de commentaires et laissez l'IA les adapter à chaque post. Ton professionnel, amical ou expert — vous choisissez.</p>
+  </div>
+
+  <div class="templates-frame">
+    <div class="tf-header">
+      <div class="tf-title">📝 Mes Templates</div>
+      <button class="tf-add">+ Nouveau</button>
+    </div>
+    <div class="template-list">
+      <div class="template-item">
+        <div class="ti-row">
+          <div class="ti-name">Professionnel</div>
+          <div class="ti-badge pro">Formel</div>
+        </div>
+        <div class="ti-text">Excellent point de vue ! Cela rejoint parfaitement les tendances actuelles du secteur. Merci pour ce partage.</div>
+      </div>
+      <div class="template-item">
+        <div class="ti-row">
+          <div class="ti-name">Amical & Engageant</div>
+          <div class="ti-badge friendly">Casual</div>
+        </div>
+        <div class="ti-text">Super article ! 🔥 J'adore cette approche, c'est exactement ce qu'il faut pour avancer dans ce domaine.</div>
+      </div>
+      <div class="template-item">
+        <div class="ti-row">
+          <div class="ti-name">Expert Technique</div>
+          <div class="ti-badge expert">Expert</div>
+        </div>
+        <div class="ti-text">Analyse pertinente. Un point à approfondir serait l'impact sur la scalabilité des architectures cloud.</div>
+      </div>
+    </div>
+    <div class="ai-preview">
+      <div class="ai-label">✨ Aperçu IA en temps réel</div>
+      <div class="ai-text">Merci pour cet article très instructif sur le leadership ! Votre expérience terrain apporte une vraie valeur ajoutée à ce sujet.<span class="ai-cursor"></span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1280px; height: 800px; background: linear-gradient(160deg, #0B1220 0%, #0f1a30 60%, #162544 100%); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+.container { display: flex; align-items: center; gap: 80px; padding: 40px 80px; }
+
+.text-side { color: white; max-width: 460px; }
+.badge { display: inline-block; background: rgba(10,102,194,0.2); color: #3b9cf5; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 16px; border: 1px solid rgba(10,102,194,0.3); }
+.text-side h1 { font-size: 42px; font-weight: 800; line-height: 1.15; margin-bottom: 16px; color: white; }
+.text-side .hl { color: #F4B183; }
+.text-side p { color: rgba(255,255,255,0.5); font-size: 16px; line-height: 1.6; margin-bottom: 28px; }
+
+/* Agent popup */
+.popup-frame {
+  width: 380px; height: 560px;
+  background: #0f1729; border-radius: 16px;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5), 0 0 60px rgba(244,177,131,0.15);
+  border: 1px solid rgba(244,177,131,0.2);
+  overflow: hidden; flex-shrink: 0;
+}
+.popup-header {
+  background: linear-gradient(135deg, #0f1729, #1a2744);
+  padding: 20px; text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.popup-header h2 { color: #0A66C2; font-size: 18px; margin-bottom: 12px; }
+.mode-toggle { display: flex; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 3px; }
+.mode-btn { flex: 1; padding: 8px 16px; border-radius: 18px; font-size: 13px; font-weight: 600; text-align: center; }
+.mode-btn.active { background: #F4B183; color: #0B1220; }
+.mode-btn.inactive { color: rgba(255,255,255,0.4); }
+
+.popup-content { padding: 20px; }
+
+/* Agent running animation */
+.agent-status {
+  text-align: center; margin: 15px 0;
+  padding: 20px; background: rgba(244,177,131,0.08); border-radius: 12px;
+  border: 1px solid rgba(244,177,131,0.15);
+}
+.agent-icon { font-size: 40px; margin-bottom: 8px; }
+.agent-label { color: #F4B183; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.agent-sub { color: rgba(255,255,255,0.4); font-size: 12px; }
+
+/* Activity log */
+.log { margin-top: 15px; }
+.log-title { color: rgba(255,255,255,0.5); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.log-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-bottom: 6px;
+  background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 12px;
+}
+.log-time { color: rgba(255,255,255,0.3); font-size: 11px; min-width: 40px; }
+.log-icon { font-size: 14px; }
+.log-text { color: rgba(255,255,255,0.7); }
+
+.progress-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 15px; overflow: hidden; }
+.progress-fill { height: 100%; width: 65%; background: linear-gradient(90deg, #F4B183, #e8956a); border-radius: 2px; }
+
+.popup-tabs {
+  display: flex; border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.2); padding: 8px 4px; margin-top: auto;
+}
+.tab-item { flex: 1; text-align: center; padding: 6px 0; font-size: 10px; color: rgba(255,255,255,0.3); }
+.tab-item.active { color: #F4B183; }
+.tab-icon { font-size: 16px; margin-bottom: 2px; }
+
+/* Floating stats */
+.float-cards { display: flex; flex-direction: column; gap: 12px; position: absolute; right: 100px; }
+.float-card {
+  background: rgba(15,23,41,0.9); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 14px 20px; min-width: 180px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.float-card .fc-label { color: rgba(255,255,255,0.4); font-size: 11px; }
+.float-card .fc-value { color: white; font-size: 24px; font-weight: 700; }
+.float-card .fc-value.blue { color: #0A66C2; }
+.float-card .fc-value.orange { color: #F4B183; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="text-side">
+    <div class="badge">🤖 Mode Agent</div>
+    <h1>Automatisation <span class="hl">complète</span> de votre LinkedIn</h1>
+    <p>Le mode Agent scroll, like et commente automatiquement. Configurez et laissez faire — le Lama s'occupe de tout.</p>
+  </div>
+
+  <div class="popup-frame">
+    <div class="popup-header">
+      <h2>✨ Lama Linked.In</h2>
+      <div class="mode-toggle">
+        <div class="mode-btn inactive">🛡️ Assisté</div>
+        <div class="mode-btn active">🤖 Agent</div>
+      </div>
+    </div>
+    <div class="popup-content">
+      <div class="agent-status">
+        <div class="agent-icon">🤖</div>
+        <div class="agent-label">Agent en action...</div>
+        <div class="agent-sub">Session 2/3 • 14 posts traités</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+      <div class="log">
+        <div class="log-title">Activité récente</div>
+        <div class="log-item"><span class="log-time">12:34</span><span class="log-icon">👍</span><span class="log-text">Like — Marie Dupont</span></div>
+        <div class="log-item"><span class="log-time">12:33</span><span class="log-icon">💬</span><span class="log-text">Commenté — Jean Martin</span></div>
+        <div class="log-item"><span class="log-time">12:32</span><span class="log-icon">👍</span><span class="log-text">Like — Sophie Bernard</span></div>
+        <div class="log-item"><span class="log-time">12:31</span><span class="log-icon">💬</span><span class="log-text">Commenté — Pierre Durand</span></div>
+        <div class="log-item"><span class="log-time">12:30</span><span class="log-icon">📜</span><span class="log-text">Scroll — 5 nouveaux posts</span></div>
+      </div>
+    </div>
+    <div class="popup-tabs">
+      <div class="tab-item active"><div class="tab-icon">▶️</div>Session</div>
+      <div class="tab-item"><div class="tab-icon">📊</div>Suivi</div>
+      <div class="tab-item"><div class="tab-icon">📝</div>Templates</div>
+      <div class="tab-item"><div class="tab-icon">⚙️</div>Réglages</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

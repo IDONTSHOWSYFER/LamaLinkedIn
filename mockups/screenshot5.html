@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1280px; height: 800px; background: linear-gradient(160deg, #0B1220 0%, #111d35 100%); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+.container { text-align: center; padding: 40px 80px; width: 100%; }
+
+.badge {
+  display: inline-block; background: rgba(52,211,153,0.12); color: #34D399;
+  padding: 8px 20px; border-radius: 20px; font-size: 15px; font-weight: 700;
+  letter-spacing: 0.5px; margin-bottom: 20px; border: 1px solid rgba(52,211,153,0.3);
+}
+.container h1 { color: white; font-size: 48px; font-weight: 800; margin-bottom: 14px; line-height: 1.1; }
+.container h1 .hl { color: #0A66C2; }
+.container .sub { color: rgba(255,255,255,0.5); font-size: 18px; margin-bottom: 44px; }
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 980px; margin: 0 auto; }
+.feature {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px; padding: 28px 24px; text-align: left;
+}
+.feature .ico { font-size: 32px; margin-bottom: 14px; }
+.feature h3 { color: white; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.feature p { color: rgba(255,255,255,0.45); font-size: 14px; line-height: 1.5; }
+
+.foot {
+  margin-top: 40px; display: inline-flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, #0A66C2, #004182); color: white;
+  padding: 14px 32px; border-radius: 12px; font-size: 17px; font-weight: 700;
+  box-shadow: 0 8px 24px rgba(10,102,194,0.4);
+}
+.foot .price { color: #94c4f5; font-weight: 800; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="badge">✨ 100% GRATUIT — SANS CARTE BANCAIRE</div>
+  <h1>Tout est gratuit. <span class="hl">Pour tout le monde.</span></h1>
+  <p class="sub">Aucun abonnement, aucune limite cachée. Toutes les fonctionnalités sont incluses.</p>
+
+  <div class="grid">
+    <div class="feature">
+      <div class="ico">🛡️</div>
+      <h3>Mode Assisté</h3>
+      <p>Highlights sur les posts et suggestions de commentaires — vous gardez la main.</p>
+    </div>
+    <div class="feature">
+      <div class="ico">🤖</div>
+      <h3>Mode Agent</h3>
+      <p>Scroll, like et commentaire automatiques avec un timing naturel.</p>
+    </div>
+    <div class="feature">
+      <div class="ico">📊</div>
+      <h3>Statistiques</h3>
+      <p>Suivez vos likes, commentaires et votre croissance en temps réel.</p>
+    </div>
+    <div class="feature">
+      <div class="ico">📝</div>
+      <h3>Templates</h3>
+      <p>Une bibliothèque de messages prêts à l'emploi, importables en CSV.</p>
+    </div>
+    <div class="feature">
+      <div class="ico">⚙️</div>
+      <h3>Réglages avancés</h3>
+      <p>Durée de session, objectifs, vitesse et pauses entièrement configurables.</p>
+    </div>
+    <div class="feature">
+      <div class="ico">🔒</div>
+      <h3>Privé & RGPD</h3>
+      <p>Vos données restent locales. Aucune revente, conformité européenne.</p>
+    </div>
+  </div>
+
+  <div class="foot">🚀 Installer gratuitement</div>
+</div>
+</body>
+</html>

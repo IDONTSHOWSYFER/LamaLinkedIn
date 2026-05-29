@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 440px; height: 280px; background: linear-gradient(135deg, #0B1220 0%, #0A66C2 100%); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+
+/* Decorative circles */
+.circle1 { position: absolute; width: 200px; height: 200px; border-radius: 50%; background: rgba(10,102,194,0.2); top: -60px; right: -40px; }
+.circle2 { position: absolute; width: 120px; height: 120px; border-radius: 50%; background: rgba(244,177,131,0.1); bottom: -30px; left: -20px; }
+
+.content { text-align: center; z-index: 1; padding: 20px; }
+.logo { font-size: 36px; margin-bottom: 6px; }
+.title { color: white; font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.title .hl { color: #F4B183; }
+.subtitle { color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 16px; }
+.cta {
+  display: inline-block; background: white; color: #0B1220;
+  padding: 8px 24px; border-radius: 20px; font-size: 13px; font-weight: 700;
+}
+.features { display: flex; gap: 16px; justify-content: center; margin-top: 14px; }
+.feat { color: rgba(255,255,255,0.5); font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="circle1"></div>
+<div class="circle2"></div>
+<div class="content">
+  <div class="logo">🦙</div>
+  <div class="title">Lama <span class="hl">Linked.In</span></div>
+  <div class="subtitle">Votre assistant LinkedIn intelligent</div>
+  <div class="cta">Installer gratuitement</div>
+  <div class="features">
+    <div class="feat">🤖 Mode Agent</div>
+    <div class="feat">💬 IA Comments</div>
+    <div class="feat">📊 Stats</div>
+  </div>
+</div>
+</body>
+</html>

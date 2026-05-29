@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1400px; height: 560px; background: linear-gradient(135deg, #0B1220 0%, #112240 40%, #0A66C2 100%); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; overflow: hidden; position: relative; }
+
+/* Decorative elements */
+.deco1 { position: absolute; width: 400px; height: 400px; border-radius: 50%; background: rgba(10,102,194,0.08); top: -150px; right: 200px; }
+.deco2 { position: absolute; width: 250px; height: 250px; border-radius: 50%; background: rgba(244,177,131,0.06); bottom: -80px; right: 100px; }
+.deco3 { position: absolute; width: 150px; height: 150px; border-radius: 50%; background: rgba(52,211,153,0.05); top: 50px; left: 40%; }
+
+.container { display: flex; align-items: center; width: 100%; padding: 0 80px; z-index: 1; }
+
+.left { flex: 1; }
+.logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.logo-icon { font-size: 42px; }
+.logo-text { color: white; font-size: 28px; font-weight: 800; }
+.logo-text .hl { color: #3b9cf5; }
+
+h1 { color: white; font-size: 46px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; max-width: 580px; }
+h1 .accent { color: #F4B183; }
+.desc { color: rgba(255,255,255,0.5); font-size: 18px; line-height: 1.5; margin-bottom: 28px; max-width: 480px; }
+
+.cta-row { display: flex; gap: 16px; align-items: center; }
+.cta-btn {
+  display: inline-block; padding: 14px 32px; border-radius: 12px;
+  font-size: 16px; font-weight: 700; text-decoration: none;
+}
+.cta-primary { background: white; color: #0B1220; }
+.cta-secondary { border: 2px solid rgba(255,255,255,0.3); color: white; }
+
+.features-row { display: flex; gap: 30px; margin-top: 24px; }
+.feat-item { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.5); font-size: 14px; }
+.feat-icon { font-size: 18px; }
+
+/* Right side - floating cards */
+.right { flex-shrink: 0; position: relative; width: 480px; height: 400px; }
+
+.float-card {
+  position: absolute; background: rgba(15,23,41,0.95);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+  padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+.card1 { top: 0; left: 20px; width: 220px; }
+.card2 { top: 30px; right: 0; width: 220px; }
+.card3 { bottom: 40px; left: 0; width: 240px; }
+.card4 { bottom: 10px; right: 20px; width: 200px; }
+
+.fc-label { color: rgba(255,255,255,0.4); font-size: 11px; margin-bottom: 4px; }
+.fc-value { font-size: 28px; font-weight: 800; }
+.fc-value.blue { color: #0A66C2; }
+.fc-value.orange { color: #F4B183; }
+.fc-value.green { color: #34D399; }
+.fc-value.white { color: white; }
+.fc-sub { color: rgba(255,255,255,0.3); font-size: 11px; margin-top: 2px; }
+
+.mini-bars { display: flex; gap: 3px; align-items: flex-end; height: 40px; margin-top: 8px; }
+.mini-bar { width: 8px; border-radius: 2px; }
+.mini-bar.b { background: #0A66C2; }
+.mini-bar.o { background: #F4B183; }
+</style>
+</head>
+<body>
+<div class="deco1"></div>
+<div class="deco2"></div>
+<div class="deco3"></div>
+
+<div class="container">
+  <div class="left">
+    <div class="logo-row">
+      <div class="logo-icon">🦙</div>
+      <div class="logo-text">Lama <span class="hl">Linked.In</span></div>
+    </div>
+    <h1>Automatisez votre <span class="accent">LinkedIn</span> avec l'IA</h1>
+    <div class="desc">Likes, commentaires personnalisés par IA, mode agent autonome. Développez votre réseau professionnel sans effort.</div>
+    <div class="cta-row">
+      <div class="cta-btn cta-primary">🚀 Installer gratuitement</div>
+      <div class="cta-btn cta-secondary">En savoir plus</div>
+    </div>
+    <div class="features-row">
+      <div class="feat-item"><span class="feat-icon">🤖</span> Mode Agent</div>
+      <div class="feat-item"><span class="feat-icon">💬</span> Commentaires IA</div>
+      <div class="feat-item"><span class="feat-icon">📊</span> Statistiques</div>
+      <div class="feat-item"><span class="feat-icon">🔒</span> Sécurisé</div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="float-card card1">
+      <div class="fc-label">👍 Likes aujourd'hui</div>
+      <div class="fc-value blue">47</div>
+      <div class="fc-sub">↑ +12 vs hier</div>
+    </div>
+    <div class="float-card card2">
+      <div class="fc-label">💬 Commentaires</div>
+      <div class="fc-value orange">23</div>
+      <div class="fc-sub">IA personnalisés</div>
+    </div>
+    <div class="float-card card3">
+      <div class="fc-label">📈 Cette semaine</div>
+      <div class="fc-value green">+156%</div>
+      <div class="mini-bars">
+        <div class="mini-bar b" style="height:40%"></div>
+        <div class="mini-bar b" style="height:55%"></div>
+        <div class="mini-bar b" style="height:45%"></div>
+        <div class="mini-bar b" style="height:70%"></div>
+        <div class="mini-bar b" style="height:85%"></div>
+        <div class="mini-bar o" style="height:60%"></div>
+        <div class="mini-bar o" style="height:90%"></div>
+      </div>
+    </div>
+    <div class="float-card card4">
+      <div class="fc-label">⏱️ Temps gagné</div>
+      <div class="fc-value white">42h</div>
+      <div class="fc-sub">ce mois</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

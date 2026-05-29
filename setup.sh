@@ -23,7 +23,7 @@ if [ ! -f .env ]; then
   echo ""
   echo "📝 Création du .env depuis .env.example..."
   cp .env.example .env
-  echo "   ⚠️  IMPORTANT: Editez apps/api/.env avec vos clés Stripe et SMTP"
+  echo "   ⚠️  IMPORTANT: Editez apps/api/.env avec votre clé RESEND_API_KEY et JWT_SECRET"
 fi
 cd ../..
 
@@ -41,7 +41,7 @@ echo ""
 echo "✅ Setup terminé !"
 echo ""
 echo "📋 Prochaines étapes :"
-echo "   1. Configurez apps/api/.env (Stripe, SMTP, JWT_SECRET)"
+echo "   1. Configurez apps/api/.env (RESEND_API_KEY, JWT_SECRET)"
 echo "   2. Lancez PostgreSQL : docker compose up postgres -d"
 echo "   3. Migrez la base : cd apps/api && pnpm db:migrate"
 echo "   4. Lancez l'API : cd apps/api && pnpm dev"

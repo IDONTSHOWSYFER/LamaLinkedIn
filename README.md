@@ -20,19 +20,18 @@
 - **Déduplication** des posts traités
 - **Curseur virtuel** simulant le mouvement de souris
 
-### Interface Popup (5 onglets)
+### Interface Popup (4 onglets)
 1. **Session** — Timer circulaire, checklist d'actions, compteurs live
 2. **Suivi** — Historique, graphiques de croissance, filtres par période
 3. **Templates** — Bibliothèque de messages, copie au clic, catégories
 4. **Réglages** — Durée, objectifs, vitesse, toggles, mode Agent avancé
-5. **Premium** — Upgrade Stripe, features premium
 
 ### Backend API
 - **Auth** — Inscription/connexion avec JWT
 - **Events** — Tracking de toutes les actions avec analytics
 - **Stats** — Agrégats par période avec charts
-- **Stripe** — Abonnement premium (checkout, portail, webhooks)
-- **Emails** — Welcome, paiement, reset password (Nodemailer)
+- **Lead magnet** — Capture d'email et envoi de l'ebook gratuit
+- **Emails** — Bienvenue, ebook, reset password (Resend)
 
 ---
 
@@ -44,8 +43,7 @@
 | Design | Tokens CSS custom (Lama Design System), composants Lama* |
 | Content Scripts | Vanilla TS, DOM LinkedIn, Chrome APIs |
 | API | Node.js, Express, Prisma ORM, PostgreSQL |
-| Paiements | Stripe (checkout, billing portal, webhooks) |
-| Emails | Nodemailer (SMTP transactionnel) |
+| Emails | Resend (API HTTP transactionnelle) |
 | CI/CD | GitHub Actions (lint, test, build) |
 
 ---
@@ -67,7 +65,7 @@
 │   │   └── package.json
 │   └── api/                    # Backend Node/Express
 │       ├── src/
-│       │   ├── routes/         # auth, events, stripe
+│       │   ├── routes/         # auth, events, lead
 │       │   ├── middleware/     # JWT auth
 │       │   ├── services/       # Email templates
 │       │   └── db/             # Seed data
@@ -101,7 +99,7 @@ pnpm install
 ```bash
 # API
 cp apps/api/.env.example apps/api/.env
-# Modifier DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, SMTP_*
+# Modifier DATABASE_URL, JWT_SECRET, RESEND_API_KEY
 ```
 
 ### 3. Initialiser la base de données
@@ -160,9 +158,9 @@ pnpm test               # Tous les tests
 
 ## Comptes de test
 
-| Email | Mot de passe | Tier |
-|-------|-------------|------|
-| demo@lama-linkedin.com | demo123 | Premium |
+| Email | Mot de passe |
+|-------|-------------|
+| demo@lama-linkedin.com | demo123 |
 
 ---
 
@@ -190,19 +188,18 @@ pnpm test               # Tous les tests
 - **Post deduplication**
 - **Virtual cursor** simulating mouse movement
 
-### Popup UI (5 tabs)
+### Popup UI (4 tabs)
 1. **Session** — Circular timer, action checklist, live counters
 2. **Tracking** — History, growth charts, period filters
 3. **Templates** — Message library, one-click copy, categories
 4. **Settings** — Duration, goals, speed, toggles, advanced Agent mode
-5. **Premium** — Stripe upgrade, premium features
 
 ### Backend API
 - **Auth** — Register/login with JWT
 - **Events** — Full action tracking with analytics
 - **Stats** — Period-based aggregates with charts
-- **Stripe** — Premium subscription (checkout, portal, webhooks)
-- **Emails** — Welcome, payment, password reset (Nodemailer)
+- **Lead magnet** — Email capture and free ebook delivery
+- **Emails** — Welcome, ebook, password reset (Resend)
 
 ---
 
@@ -214,8 +211,7 @@ pnpm test               # Tous les tests
 | Design | Custom CSS tokens (Lama Design System), Lama* components |
 | Content Scripts | Vanilla TS, LinkedIn DOM, Chrome APIs |
 | API | Node.js, Express, Prisma ORM, PostgreSQL |
-| Payments | Stripe (checkout, billing portal, webhooks) |
-| Emails | Nodemailer (transactional SMTP) |
+| Emails | Resend (transactional HTTP API) |
 | CI/CD | GitHub Actions (lint, test, build) |
 
 ---

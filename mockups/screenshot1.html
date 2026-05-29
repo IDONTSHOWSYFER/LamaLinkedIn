@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1280px; height: 800px; background: linear-gradient(135deg, #0B1220 0%, #1a2744 50%, #0A66C2 100%); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+.container { display: flex; align-items: center; gap: 60px; padding: 40px 80px; }
+
+/* Phone mockup with extension popup */
+.popup-frame {
+  width: 380px; height: 580px;
+  background: #0f1729; border-radius: 16px;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5), 0 0 40px rgba(10,102,194,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden; flex-shrink: 0;
+}
+.popup-header {
+  background: linear-gradient(135deg, #0f1729, #1a2744);
+  padding: 20px; text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.popup-header h2 { color: #0A66C2; font-size: 18px; margin-bottom: 12px; }
+.mode-toggle {
+  display: flex; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 3px; gap: 2px;
+}
+.mode-btn {
+  flex: 1; padding: 8px 16px; border-radius: 18px; font-size: 13px; font-weight: 600;
+  text-align: center; cursor: pointer; transition: all 0.2s;
+}
+.mode-btn.active-assist { background: #0A66C2; color: white; }
+.mode-btn.active-agent { background: #F4B183; color: #0B1220; }
+.mode-btn.inactive { background: transparent; color: rgba(255,255,255,0.4); }
+
+.popup-content { padding: 20px; }
+
+/* Timer circle */
+.timer-section { text-align: center; margin: 10px 0 20px; }
+.timer-circle {
+  width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 10px;
+  border: 4px solid rgba(10,102,194,0.2); position: relative;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,102,194,0.05);
+}
+.timer-circle::before {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%;
+  border: 4px solid transparent; border-top-color: #0A66C2;
+  transform: rotate(200deg);
+}
+.timer-text { color: white; font-size: 28px; font-weight: 700; }
+.timer-label { color: rgba(255,255,255,0.5); font-size: 12px; }
+
+/* Stats grid */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.stat-card {
+  background: rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; text-align: center;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.stat-value { color: white; font-size: 22px; font-weight: 700; }
+.stat-value.blue { color: #0A66C2; }
+.stat-value.orange { color: #F4B183; }
+.stat-value.green { color: #34D399; }
+.stat-label { color: rgba(255,255,255,0.4); font-size: 11px; margin-top: 2px; }
+
+/* Checklist */
+.checklist { margin-bottom: 20px; }
+.check-item {
+  display: flex; align-items: center; gap: 10px; padding: 6px 0;
+  color: rgba(255,255,255,0.7); font-size: 13px;
+}
+.check-done { color: #34D399; }
+.check-icon { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
+.check-icon.done { background: #34D399; }
+.check-icon.pending { border: 2px solid rgba(255,255,255,0.2); }
+
+/* Start button */
+.start-btn {
+  width: 100%; padding: 12px; border-radius: 10px; border: none;
+  background: linear-gradient(135deg, #0A66C2, #004182); color: white;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 15px rgba(10,102,194,0.4);
+}
+
+/* Tabs */
+.popup-tabs {
+  display: flex; border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.2); padding: 8px 4px;
+}
+.tab-item {
+  flex: 1; text-align: center; padding: 6px 0; font-size: 10px;
+  color: rgba(255,255,255,0.3); cursor: pointer;
+}
+.tab-item.active { color: #0A66C2; }
+.tab-icon { font-size: 16px; margin-bottom: 2px; }
+
+/* Right side text */
+.text-side { color: white; max-width: 500px; }
+.text-side h1 {
+  font-size: 48px; font-weight: 800; line-height: 1.1; margin-bottom: 20px;
+  background: linear-gradient(135deg, #ffffff, #94c4f5);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.text-side .highlight {
+  background: linear-gradient(135deg, #0A66C2, #3b9cf5);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.text-side p { color: rgba(255,255,255,0.6); font-size: 18px; line-height: 1.6; margin-bottom: 24px; }
+.features { list-style: none; }
+.features li {
+  color: rgba(255,255,255,0.7); font-size: 16px; padding: 6px 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.features li::before { content: '✓'; color: #34D399; font-weight: 700; font-size: 18px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="popup-frame">
+    <div class="popup-header">
+      <h2>✨ Lama Linked.In</h2>
+      <div class="mode-toggle">
+        <div class="mode-btn active-assist">🛡️ Assisté</div>
+        <div class="mode-btn inactive">🤖 Agent</div>
+      </div>
+    </div>
+    <div class="popup-content">
+      <div class="timer-section">
+        <div class="timer-circle">
+          <span class="timer-text">2:34</span>
+        </div>
+        <div class="timer-label">Session en cours</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value blue">12</div><div class="stat-label">Likes</div></div>
+        <div class="stat-card"><div class="stat-value orange">8</div><div class="stat-label">Comments</div></div>
+        <div class="stat-card"><div class="stat-value green">20</div><div class="stat-label">Total</div></div>
+      </div>
+      <div class="checklist">
+        <div class="check-item"><div class="check-icon done"></div><span class="check-done">Scroll du feed</span></div>
+        <div class="check-item"><div class="check-icon done"></div><span class="check-done">Like des posts pertinents</span></div>
+        <div class="check-item"><div class="check-icon pending"></div><span>Commentaires IA personnalisés</span></div>
+      </div>
+      <button class="start-btn">⏸ Pause</button>
+    </div>
+    <div class="popup-tabs">
+      <div class="tab-item active"><div class="tab-icon">▶️</div>Session</div>
+      <div class="tab-item"><div class="tab-icon">📊</div>Suivi</div>
+      <div class="tab-item"><div class="tab-icon">📝</div>Templates</div>
+      <div class="tab-item"><div class="tab-icon">⚙️</div>Réglages</div>
+    </div>
+  </div>
+
+  <div class="text-side">
+    <h1>Votre assistant <span class="highlight">LinkedIn</span> intelligent</h1>
+    <p>Automatisez vos interactions LinkedIn avec l'IA et développez votre réseau professionnel efficacement.</p>
+    <ul class="features">
+      <li>Mode Agent — Automatisation complète</li>
+      <li>Commentaires personnalisés par IA</li>
+      <li>Statistiques détaillées en temps réel</li>
+      <li>Templates de commentaires illimités</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
