@@ -9,11 +9,7 @@ import { leadRouter } from './routes/lead.js';
 import { securityHeaders, cacheControl, performanceLogger } from './middleware/greenIt.js';
 import { rateLimiter } from './middleware/rateLimiter.js';
 
-// Apply any pending Prisma migrations on boot. Render's start command runs the
-// compiled bundle directly and bypasses `prisma migrate deploy`, which once left
-// the DB missing columns and 500'd every auth query. Running it here makes a
-// fresh deploy self-heal regardless of how the process is launched. Failure is
-// logged but never crashes boot.
+// Applique les migrations Prisma au boot (le start Render bypasse migrate deploy). Échec non bloquant.
 function runMigrations(): void {
   try {
     const apiDir = dirname(__dirname); // dist/ -> apps/api
@@ -28,6 +24,9 @@ function runMigrations(): void {
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
+// Render route via un proxy : trust proxy rend req.ip fiable (rate-limiting par client réel).
+app.set('trust proxy', 1);
+
 const ALLOWED_ORIGINS = [
   'https://lamalinked.in',
   'https://www.lamalinked.in',
@@ -35,16 +34,16 @@ const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
-// ─── CORS en premier ────────────────────────────────────────────────────────
-// Les préflights OPTIONS doivent répondre immédiatement, AVANT tout middleware
-// potentiellement lent (rate limiter / Redis). Sinon chaque préflight paie la
-// latence réseau inutilement.
+const EXTENSION_ID = process.env.EXTENSION_ID || 'mjabdegoelohpjfgcljlphoeffiafdpi';
+const IS_PROD = process.env.NODE_ENV === 'production';
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (origin.startsWith('chrome-extension://') ||
-        origin.startsWith('http://localhost') ||
-        ALLOWED_ORIGINS.includes(origin)) {
+    if (origin === `chrome-extension://${EXTENSION_ID}` || ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+    if (!IS_PROD && (origin.startsWith('chrome-extension://') || origin.startsWith('http://localhost'))) {
       return callback(null, true);
     }
     callback(null, false);
@@ -52,15 +51,10 @@ app.use(cors({
   credentials: true,
 }));
 
-// ─── Sécurité & Green IT ───────────────────────────────────────────────────
-app.use(securityHeaders);       // Headers OWASP (sécurité)
-app.use(cacheControl);          // Cache-Control intelligent (éco-conception)
-app.use(performanceLogger);     // Monitoring des requêtes lentes (éco-conception)
-
-// Rate limiter global : 200 req/min par IP (protection DDoS, NoSQL/Redis)
+app.use(securityHeaders);
+app.use(cacheControl);
+app.use(performanceLogger);
 app.use(rateLimiter({ maxRequests: 200, windowSeconds: 60, prefix: 'rl:global' }));
-
-// Limite la taille du body JSON (éco-conception : évite les payloads abusifs)
 app.use(express.json({ limit: '100kb' }));
 
 // Health check

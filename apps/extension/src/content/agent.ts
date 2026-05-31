@@ -56,7 +56,6 @@ function speedLevel(cfg: UserConfig): number {
   return clamp(Math.round((raw - 1) / 9 * 5), 0, 5);
 }
 
-// ========== Virtual Cursor ==========
 let cursorEl: HTMLElement | null = null;
 let cursorTimer: number | null = null;
 let cursorIdle = { x: 0, y: 0 };
@@ -127,7 +126,6 @@ async function moveCursorTo(el: Element, level: number) {
   const tx = rect.left + rect.width / 2 + (Math.random() * 10 - 5);
   const ty = rect.top + rect.height / 2 + (Math.random() * 6 - 3);
   cursorIdle = { x: tx, y: ty };
-  // Smooth move
   const steps = 12 + Math.floor(Math.random() * 8);
   const sx = parseFloat(c.style.left) || innerWidth / 2;
   const sy = parseFloat(c.style.top) || innerHeight / 3;
@@ -149,7 +147,6 @@ function removeCursor() {
 
 // All LinkedIn DOM lookups live in ./selectors (shared with assist mode).
 
-// ========== Human Typing ==========
 async function typeHuman(el: HTMLElement, text: string, level: number, isRunning: () => boolean, isPaused: () => boolean): Promise<boolean> {
   isTyping = true;
   scrollPaused = true;
@@ -193,7 +190,6 @@ async function typeHuman(el: HTMLElement, text: string, level: number, isRunning
   return true;
 }
 
-// ========== Scroll Container ==========
 // CRITICAL: LinkedIn 2025+ uses <main> as the scroll container with overflow: auto.
 // document.body has overflow: hidden, so window.scrollBy() does NOTHING.
 // All scrolling must target the <main> element (or fallback to window).
@@ -244,8 +240,6 @@ async function clickLoadMoreIfPresent(): Promise<boolean> {
   }
   return false;
 }
-
-// ========== Smooth Scroll ==========
 
 async function smoothScroll(level: number, isRunning: () => boolean, isPaused: () => boolean, skip = 0): Promise<void> {
   scrollPaused = false;
@@ -334,7 +328,6 @@ async function aggressiveScroll(level: number, isRunning: () => boolean, isPause
   await sleep(jitter(500, level));
 }
 
-// ========== Detect already-commented posts ==========
 /** Check if the current user already has a visible comment on this post */
 function hasUserAlreadyCommented(post: Element): boolean {
   // Method 1: Check if comment editor already has content (from a previous attempt)
@@ -365,7 +358,6 @@ function hasUserAlreadyCommented(post: Element): boolean {
   return false;
 }
 
-// ========== Main ==========
 export async function agentMode(
   config: UserConfig,
   isRunning: () => boolean,
@@ -398,7 +390,6 @@ export async function agentMode(
     const postRect = post.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     const targetScroll = container.scrollTop + postRect.top - containerRect.top - (container.clientHeight / 3);
-    // Smooth scroll to the post
     const startScroll = container.scrollTop;
     const scrollDist = targetScroll - startScroll;
     const steps = 20 + Math.floor(Math.random() * 10);
@@ -503,7 +494,6 @@ export async function agentMode(
     return did;
   }
 
-  // Main loop
   (async () => {
     try {
     let idleTries = 0;
@@ -569,7 +559,6 @@ export async function agentMode(
       scrollPaused = false;
       isTyping = false;
 
-      // Small pause to seem human
       await sleep(jitter(400, level));
 
       // ALWAYS scroll to find the next post — this is the key fix

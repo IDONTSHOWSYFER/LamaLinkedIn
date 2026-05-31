@@ -224,10 +224,10 @@ export function assistMode(
     post.appendChild(bar);
   }
 
-  // ---- Delegated click handling (survives LinkedIn React re-renders) ----
-  // A single capture-phase listener sees every click before LinkedIn does, so
-  // we can attribute likes/comments to the right post even when the button
-  // elements are swapped out from under us on re-render.
+  // Delegated click handling (survives LinkedIn React re-renders): a single
+  // capture-phase listener sees every click before LinkedIn does, so we can
+  // attribute likes/comments to the right post even when the button elements
+  // are swapped out from under us on re-render.
   function onDocClick(e: Event) {
     if (!isRunning() || isPaused()) return;
     const target = e.target as Element | null;
@@ -270,7 +270,6 @@ export function assistMode(
 
   document.addEventListener('click', onDocClick, true);
 
-  // ---- Highlight + suggestion refresh loop ----
   function refreshHighlights() {
     if (!isRunning() || isPaused()) return;
     const posts = findAllPosts();

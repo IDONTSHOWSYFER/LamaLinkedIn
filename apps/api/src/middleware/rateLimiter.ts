@@ -1,37 +1,13 @@
-/**
- * Rate Limiter middleware basé sur Redis (NoSQL)
- *
- * Algorithme : Sliding Window Counter
- * Stocke le nombre de requêtes par IP dans Redis avec un TTL.
- *
- * Compétences CDA :
- * - Développer des composants d'accès aux données NoSQL
- * - Sécuriser les composants serveur (protection anti-abus)
- * - Éco-conception : limite la charge serveur inutile
- */
-
 import { Request, Response, NextFunction } from 'express';
 import { getRedis } from '../db/redis.js';
 
 interface RateLimitOptions {
-  /** Nombre max de requêtes par fenêtre */
   maxRequests: number;
-  /** Durée de la fenêtre en secondes */
   windowSeconds: number;
-  /** Préfixe pour la clé Redis */
   prefix?: string;
-  /** Message d'erreur personnalisé */
   message?: string;
 }
 
-/**
- * Crée un middleware de rate limiting.
- *
- * Exemple d'utilisation :
- * ```ts
- * router.post('/login', rateLimiter({ maxRequests: 5, windowSeconds: 60 }), handler);
- * ```
- */
 export function rateLimiter(options: RateLimitOptions) {
   const {
     maxRequests,
@@ -41,7 +17,7 @@ export function rateLimiter(options: RateLimitOptions) {
   } = options;
 
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // Les préflights CORS ne doivent jamais être limités ni ralentis.
+    // Les préflights CORS ne doivent jamais être limités.
     if (req.method === 'OPTIONS') { next(); return; }
 
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
@@ -51,65 +27,13 @@ export function rateLimiter(options: RateLimitOptions) {
       const client = getRedis();
       const count = await client.incr(key);
 
-      // Définir le TTL uniquement au premier incrément
       if (count === 1) {
         await client.expire(key, windowSeconds);
       }
 
-      // Headers informatifs (bonne pratique REST)
       res.setHeader('X-RateLimit-Limit', maxRequests);
       res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - count));
       res.setHeader('X-RateLimit-Reset', Math.ceil(Date.now() / 1000) + windowSeconds);
-
-      if (count > maxRequests) {
-        res.status(429).json({
-          message,
-          retryAfter: windowSeconds,
-        });
-        return;
-      }
-
-      next();
-    } catch (err) {
-      // En cas d'erreur Redis, on laisse passer (fail-open)
-      console.warn('[RateLimiter] Redis error, failing open:', err);
-      next();
-    }
-  };
-}
-
-/**
- * Rate limiter spécifique par userId (après authentification)
- * Utile pour limiter les actions métier (events, exports...)
- */
-export function userRateLimiter(options: RateLimitOptions & { userIdExtractor?: (req: Request) => string }) {
-  const {
-    maxRequests,
-    windowSeconds,
-    prefix = 'url',
-    message = 'Limite de requêtes atteinte pour votre compte.',
-    userIdExtractor,
-  } = options;
-
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    if (req.method === 'OPTIONS') { next(); return; }
-
-    const userId = userIdExtractor
-      ? userIdExtractor(req)
-      : (req as any).userId || 'anonymous';
-
-    const key = `${prefix}:${userId}:${Math.floor(Date.now() / (windowSeconds * 1000))}`;
-
-    try {
-      const client = getRedis();
-      const count = await client.incr(key);
-
-      if (count === 1) {
-        await client.expire(key, windowSeconds);
-      }
-
-      res.setHeader('X-RateLimit-Limit', maxRequests);
-      res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - count));
 
       if (count > maxRequests) {
         res.status(429).json({ message, retryAfter: windowSeconds });
@@ -117,8 +41,10 @@ export function userRateLimiter(options: RateLimitOptions & { userIdExtractor?: 
       }
 
       next();
-    } catch {
-      next(); // Fail-open
+    } catch (err) {
+      // Fail-open : un incident Redis ne doit jamais bloquer les requêtes.
+      console.warn('[RateLimiter] Redis error, failing open:', err);
+      next();
     }
   };
 }

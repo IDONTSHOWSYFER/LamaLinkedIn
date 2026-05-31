@@ -2,12 +2,11 @@ import { Router, type Router as RouterType, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db/client.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
-import { rateLimiter, userRateLimiter } from '../middleware/rateLimiter.js';
+import { rateLimiter } from '../middleware/rateLimiter.js';
 import { cached, invalidateCache } from '../db/redis.js';
 
 export const eventsRouter: RouterType = Router();
 
-// Rate limiter pour la création d'events (anti-spam, NoSQL/Redis)
 const eventLimiter = rateLimiter({
   maxRequests: 120,
   windowSeconds: 60,
@@ -34,7 +33,6 @@ eventsRouter.post('/', authMiddleware, eventLimiter, async (req: AuthRequest, re
       },
     });
 
-    // Invalider le cache stats de cet utilisateur (NoSQL)
     await invalidateCache(
       `stats:${req.userId}:today`,
       `stats:${req.userId}:week`,
@@ -57,8 +55,6 @@ eventsRouter.get('/stats', authMiddleware, async (req: AuthRequest, res: Respons
     const period = (req.query.period as string) || 'today';
     const cacheKey = `stats:${req.userId}:${period}`;
 
-    // Cache Redis (NoSQL) — TTL 30s pour les stats "today", 5min pour "week"/"month"
-    // Éco-conception : réduit les requêtes SQL répétitives
     const cacheTTL = period === 'today' ? 30 : 300;
 
     const stats = await cached(cacheKey, cacheTTL, async () => {

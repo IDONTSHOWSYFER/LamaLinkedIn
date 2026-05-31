@@ -14,7 +14,9 @@ function hashToken(raw: string): string {
 
 export const authRouter: RouterType = Router();
 
-// Rate limiting : protection anti-brute-force (NoSQL/Redis)
+// Hash bcrypt fixe : égalise le temps de réponse du login quand l'email n'existe pas (anti-énumération).
+const DUMMY_HASH = bcrypt.hashSync('no-user-placeholder', 12);
+
 const loginLimiter = rateLimiter({
   maxRequests: 5,
   windowSeconds: 60,
@@ -105,13 +107,8 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response): Pro
     const { email, password } = loginSchema.parse(req.body);
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      res.status(401).json({ message: 'Identifiants incorrects' });
-      return;
-    }
-
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
+    const valid = await bcrypt.compare(password, user?.password ?? DUMMY_HASH);
+    if (!user || !valid) {
       res.status(401).json({ message: 'Identifiants incorrects' });
       return;
     }
@@ -215,8 +212,7 @@ authRouter.put('/password', authMiddleware, async (req: AuthRequest, res: Respon
   }
 });
 
-// Demande de réinitialisation : envoie un email avec un lien si le compte existe.
-// Réponse toujours générique (anti-énumération de comptes — OWASP).
+// Réponse toujours générique : anti-énumération de comptes (OWASP).
 authRouter.post('/forgot-password', forgotLimiter, async (req: Request, res: Response): Promise<void> => {
   const genericMessage = 'Si un compte existe pour cette adresse, un email de réinitialisation a été envoyé.';
   try {
@@ -248,7 +244,6 @@ authRouter.post('/forgot-password', forgotLimiter, async (req: Request, res: Res
   }
 });
 
-// Réinitialisation effective avec le token reçu par email.
 authRouter.post('/reset-password', forgotLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { token, password } = resetPasswordSchema.parse(req.body);

@@ -8,8 +8,6 @@ import { safeSendMessage } from './context';
 import { warn } from '@/lib/log';
 import { setSelectorAlert } from '@/lib/storage';
 
-// ========== Post discovery ==========
-
 export function hasLikeButton(el: Element): boolean {
   return Array.from(el.querySelectorAll('button')).some((b) => {
     const label = b.getAttribute('aria-label') || '';
@@ -52,8 +50,6 @@ export function findVisiblePosts(): Element[] {
   });
 }
 
-// ========== Comment-section guard ==========
-
 export function isInsideCommentSection(el: Element): boolean {
   if (el.closest('.comments-comment-entity, .comments-comment-social-bar, .comments-comments-list')) {
     return true;
@@ -65,8 +61,6 @@ export function isInsideCommentSection(el: Element): boolean {
   if (/reply|commentReply/i.test(ck) || /reply|commentReply/i.test(parentCk)) return true;
   return false;
 }
-
-// ========== Like ==========
 
 export function findLikeButton(post: Element): HTMLButtonElement | null {
   const classBtn = post.querySelector('button.react-button__trigger') as HTMLButtonElement | null;
@@ -96,8 +90,6 @@ export function isAlreadyLiked(btn: HTMLButtonElement): boolean {
   if (circle) return true;
   return false;
 }
-
-// ========== Comment open / editor / submit ==========
 
 export function findCommentButton(post: Element): HTMLButtonElement | null {
   const classBtn = post.querySelector('button.comment-button') as HTMLButtonElement | null;
@@ -156,9 +148,8 @@ export function findSendButton(post: Element): HTMLButtonElement | null {
   return null;
 }
 
-// ========== Click classification (delegated event model) ==========
-// Capture-phase listeners observe a click *before* LinkedIn handles it, so we
-// can attribute the user's action by inspecting the button that was hit.
+// Click classification: capture-phase listeners observe a click *before* LinkedIn
+// handles it, so we attribute the user's action by inspecting the button that was hit.
 
 export function isSendButtonEl(btn: Element): boolean {
   const ck = btn.getAttribute('componentkey') || '';
@@ -193,8 +184,6 @@ export function isLikeButtonEl(btn: Element): boolean {
   if (/^like$/i.test(text) || /\blike\b/i.test(label)) return true;
   return false;
 }
-
-// ========== Post identity & author ==========
 
 export function getPostId(post: Element): string {
   const cached = post.getAttribute('data-lbp-id');
@@ -244,11 +233,9 @@ export function getAuthorName(post: Element): string {
   return 'Utilisateur';
 }
 
-// ========== Label-change detection (#10 resilience) ==========
-// If we repeatedly see posts on screen but can't locate a single like button,
-// LinkedIn has very likely renamed/restructured its controls. We surface that
-// once so the owner knows a selector update is needed — instead of the
-// extension silently doing nothing.
+// Label-change detection: if we repeatedly see posts on screen but can't locate a single
+// like button, LinkedIn has likely renamed/restructured its controls. We surface that once
+// so the owner knows a selector update is needed, instead of silently doing nothing.
 
 let consecutiveMisses = 0;
 let alerted = false;

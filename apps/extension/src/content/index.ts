@@ -65,7 +65,6 @@ async function start(mode: AppMode, reset: boolean) {
       chrome.runtime.sendMessage({ type: 'LBP_NOTIFY', title: 'Lama Linked.In', message: `${mode === 'agent' ? 'Agent' : 'Assisté'} démarré`, silent: true });
     } catch {}
 
-    // Start session timer - auto-stop when duration expires
     startSessionTimer(config);
 
     if (mode === 'assist') {
@@ -92,12 +91,10 @@ function startSessionTimer(config: UserConfig) {
     const total = currentMode === 'assist' ? 1 : config.sessionsPerDay;
 
     if (nextIndex <= total) {
-      // Pause between sessions
       try {
         chrome.runtime.sendMessage({ type: 'LBP_NOTIFY', title: 'Lama Linked.In', message: `Session ${session.sessionIndex}/${total} terminée. Pause de ${config.pauseDurationMin} min...` });
       } catch {}
 
-      // Stop current mode
       if (assistCleanup) { assistCleanup(); assistCleanup = null; }
       if (agentCleanup) { agentCleanup(); agentCleanup = null; }
 
@@ -106,14 +103,12 @@ function startSessionTimer(config: UserConfig) {
       updatePanelStatus(`Pause... Session ${nextIndex}/${total} dans ${config.pauseDurationMin} min`);
       try { chrome.runtime.sendMessage({ type: 'LBP_BADGE', text: '||', color: '#F59E0B' }); } catch {}
 
-      // Refresh page between sessions if configured
       if (config.refreshAfterSession) {
         await setSession({ botState: 'running', sessionIndex: nextIndex });
         window.location.reload();
         return;
       }
 
-      // Wait for pause duration then start next session
       const pauseMs = config.pauseDurationMin * 60 * 1000;
       window.setTimeout(async () => {
         if (!running || !contextAlive()) return;
@@ -143,7 +138,6 @@ function startSessionTimer(config: UserConfig) {
         }
       }, pauseMs);
     } else {
-      // All sessions done
       try {
         chrome.runtime.sendMessage({ type: 'LBP_NOTIFY', title: 'Lama Linked.In', message: `Toutes les sessions terminées (${total}/${total}) !` });
       } catch {}
@@ -183,7 +177,6 @@ async function onAction(type: 'like' | 'comment', postId: string, content: strin
   const updated = await getSession();
   updatePanel(updated, currentMode);
 
-  // Sync to API in background (non-blocking)
   try {
     chrome.runtime.sendMessage({ type: 'LBP_ACTION_LOGGED', event });
   } catch {}
@@ -201,7 +194,6 @@ function stop() {
   try { chrome.runtime.sendMessage({ type: 'LBP_BADGE', text: '', color: '#0A66C2' }); } catch {}
 }
 
-// Message listener
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'LBP_START') {
     start(msg.payload.mode, msg.payload.reset !== false).then(() => {
@@ -251,14 +243,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (Object.keys(sessionUpdate).length > 0) {
       setSession(sessionUpdate);
     }
-    // Reload config for next use
     getConfig().then(c => { currentConfig = c; });
     sendResponse({ ok: true });
   }
   return false;
 });
 
-// Auto-start check on page load
 (async () => {
   const session = await getSession();
   if (session.botState === 'running' && session.startedAt) {

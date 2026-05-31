@@ -1,18 +1,6 @@
-/**
- * Redis client — Composant d'accès aux données NoSQL (résilient)
- *
- * Stratégie : Upstash Redis (serverless REST) si configuré, sinon store mémoire.
- * Toutes les opérations sont protégées par un timeout + un disjoncteur
- * (circuit breaker) : si Upstash devient injoignable, on bascule instantanément
- * sur le store mémoire pendant une période de repli, sans jamais bloquer la
- * requête HTTP. Une URL Upstash morte ne coûte donc qu'un seul timeout court
- * (et non un retry réseau sur chaque requête).
- *
- * Compétences CDA :
- * - Développer des composants d'accès aux données NoSQL
- * - Fiabiliser / sécuriser les composants serveur (résilience, dégradation gracieuse)
- * - Éco-conception : évite les retries réseau coûteux et inutiles
- */
+// Client Redis résilient : Upstash si configuré, sinon store mémoire. Chaque opération
+// est protégée par un timeout + disjoncteur ; si Upstash devient injoignable, on bascule
+// sur le store mémoire pendant un repli, sans jamais bloquer la requête HTTP.
 
 import { Redis } from '@upstash/redis';
 
@@ -26,7 +14,6 @@ export interface RedisLike {
   ttl(key: string): Promise<number>;
 }
 
-// ─── Réglages de résilience ────────────────────────────────────────────────
 const OP_TIMEOUT_MS = 800;     // au-delà → Upstash considéré injoignable
 const FAILURE_THRESHOLD = 2;   // échecs consécutifs avant ouverture du disjoncteur
 const COOLDOWN_MS = 30_000;    // durée de repli mémoire avant nouvelle tentative
@@ -190,11 +177,7 @@ class InMemoryRedis implements RedisLike {
   }
 }
 
-// ─── Cache helpers ───────────────────────────────────────────────────────────
-
-/**
- * Cache-aside : cherche dans Redis, sinon exécute le fetcher et met en cache.
- */
+// Cache-aside : cherche dans Redis, sinon exécute le fetcher et met en cache.
 export async function cached<T>(
   key: string,
   ttlSeconds: number,

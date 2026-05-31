@@ -1,24 +1,17 @@
-/**
- * Service email — Resend (API HTTP)
- *
- * On utilise l'API HTTP de Resend (https://api.resend.com/emails) plutôt que
- * SMTP : pas de connexion TCP persistante, pas de timeout `ETIMEDOUT` sur le
- * port 465/587, et une requête HTTP courte protégée par un AbortController.
- * Si `RESEND_API_KEY` est absent, l'envoi est un no-op (log) : l'application
- * ne plante jamais et ne bloque jamais une requête à cause de l'email.
- *
- * Compétences CDA : consommer un service tiers (API REST), gérer les erreurs
- * et les délais réseau, éco-conception (pas de connexion inutile maintenue).
- */
-
-// Clé API Resend (format `re_...`). On accepte `SMTP_PASS` en repli : la clé a
-// été stockée sous ce nom sur Render, et c'est une vraie clé Resend, pas un mot
-// de passe SMTP (on n'utilise pas SMTP ici, seulement l'API HTTP).
 const RESEND_API_KEY = process.env.RESEND_API_KEY || process.env.SMTP_PASS;
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const FROM = process.env.EMAIL_FROM || 'Lama Linked.In <noreply@lamalinked.in>';
 const REPLY_TO = process.env.EMAIL_REPLY_TO || 'heycestlelama@gmail.com';
 const SEND_TIMEOUT_MS = 10_000;
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 interface SendEmailOptions {
   to: string;
@@ -26,11 +19,6 @@ interface SendEmailOptions {
   html: string;
 }
 
-/**
- * Envoie un email via l'API Resend. No-op si aucune clé n'est configurée.
- * Lance une erreur en cas de réponse non-2xx (le routeur appelant décide
- * s'il l'ignore ou la propage).
- */
 async function sendEmail(opts: SendEmailOptions): Promise<void> {
   if (!RESEND_API_KEY) {
     console.warn(`[Email] RESEND_API_KEY absente — "${opts.subject}" non envoyé (no-op).`);
@@ -74,7 +62,7 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<void> 
         <div style="text-align: center; margin-bottom: 24px;">
           <h1 style="color: #0A66C2; font-size: 24px; margin: 0;">Lama Linked.In</h1>
         </div>
-        <h2 style="color: #0B1220;">Bienvenue ${name} !</h2>
+        <h2 style="color: #0B1220;">Bienvenue ${escapeHtml(name)} !</h2>
         <p style="color: #374151; line-height: 1.6;">
           Merci de rejoindre Lama Linked.In. Votre assistant LinkedIn est prêt à vous aider à développer
           votre réseau professionnel.
@@ -127,7 +115,7 @@ export async function sendEbookEmail(to: string, firstName: string): Promise<voi
 <!-- Body -->
 <tr><td style="padding:40px;">
   <p style="color:#1a1a2e;font-size:16px;line-height:1.6;margin:0 0 8px;">
-    Bonjour <strong>${firstName}</strong>,
+    Bonjour <strong>${escapeHtml(firstName)}</strong>,
   </p>
   <p style="color:#555770;font-size:15px;line-height:1.7;margin:0 0 32px;">
     Merci pour votre intérêt ! Votre exemplaire du guide <em>"Les stratégies LinkedIn qui font la différence"</em> est prêt à être téléchargé.

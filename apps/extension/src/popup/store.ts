@@ -27,7 +27,6 @@ interface Store {
 }
 
 async function findLinkedInTab(): Promise<number | null> {
-  // Try multiple URL patterns
   const patterns = [
     '*://www.linkedin.com/feed/*',
     '*://www.linkedin.com/feed',
@@ -41,7 +40,6 @@ async function findLinkedInTab(): Promise<number | null> {
 }
 
 async function ensureContentScript(tabId: number): Promise<boolean> {
-  // Try to ping the content script
   try {
     const response = await chrome.tabs.sendMessage(tabId, { type: 'LBP_PING' });
     if (response?.pong) return true;
@@ -49,7 +47,6 @@ async function ensureContentScript(tabId: number): Promise<boolean> {
     // Content script not loaded - try to inject it
   }
 
-  // Programmatically inject the content script using manifest entry
   try {
     const manifest = chrome.runtime.getManifest();
     const cs = manifest.content_scripts?.[0];
@@ -89,7 +86,6 @@ export const useStore = create<Store>((set, get) => ({
       getInstallId(),
     ]);
     set({ config, session, events, installId });
-    // If bot is running, go to run tab
     if (session.botState === 'running' || session.botState === 'paused') {
       set({ activeTab: 'run' });
     }
@@ -115,7 +111,6 @@ export const useStore = create<Store>((set, get) => ({
       set({ session });
     }
 
-    // Notify content script
     try {
       const tabs = await chrome.tabs.query({ url: '*://www.linkedin.com/*' });
       for (const tab of tabs) {
@@ -148,21 +143,16 @@ export const useStore = create<Store>((set, get) => ({
     const useMode = mode || config.mode;
     set({ activeTab: 'run' });
 
-    // Find LinkedIn tab
     let tabId = await findLinkedInTab();
     if (!tabId) {
-      // Open LinkedIn feed and wait
       const newTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/' });
       if (!newTab.id) return;
       tabId = newTab.id;
-      // Wait for page to load
       await new Promise(r => setTimeout(r, 3000));
     }
 
-    // Ensure content script is loaded
     await ensureContentScript(tabId);
 
-    // Send start message with retry
     let sent = false;
     for (let attempt = 0; attempt < 3 && !sent; attempt++) {
       try {
@@ -231,7 +221,6 @@ export const useStore = create<Store>((set, get) => ({
   toggleMode: async (mode) => {
     await setConfig({ mode });
     set({ config: { ...get().config, mode } });
-    // Notify content script
     const tabs = await chrome.tabs.query({ url: '*://www.linkedin.com/*' });
     for (const tab of tabs) {
       if (tab.id) {

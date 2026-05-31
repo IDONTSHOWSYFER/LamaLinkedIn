@@ -47,11 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('lbp_token', data.token);
     setUser(data.user);
 
-    // Notify extension via postMessage
     try {
-      window.postMessage({ type: 'LBP_AUTH', token: data.token, user: data.user }, '*');
+      window.postMessage({ type: 'LBP_AUTH', token: data.token, user: data.user }, window.location.origin);
     } catch {
-      // silently fail if postMessage is unavailable
+      // silently fail
     }
   };
 
@@ -64,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
 
     try {
-      window.postMessage({ type: 'LBP_AUTH', token: data.token, user: data.user }, '*');
+      window.postMessage({ type: 'LBP_AUTH', token: data.token, user: data.user }, window.location.origin);
     } catch {
       // silently fail
     }
@@ -74,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('lbp_token');
     setUser(null);
     try {
-      window.postMessage({ type: 'LBP_LOGOUT' }, '*');
+      window.postMessage({ type: 'LBP_LOGOUT' }, window.location.origin);
     } catch {
       // silently fail
     }
