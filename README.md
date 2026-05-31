@@ -1,174 +1,18 @@
 # Lama Linked.In
 
-**Extension Chrome intelligente pour Linked.In** avec double mode : Assisté (manuel guidé) et Agent (automatisation complète).
+**Smart Chrome extension for LinkedIn** with a dual mode — Assisted (guided manual) and Agent (full automation) — plus a marketing funnel and a backend API. The whole stack is **free**: no payment, no subscription, no premium tier.
 
 ---
 
-## Fonctionnalités
+## Monorepo
 
-### Mode Assisté
-- **Highlights** sur les boutons Like des posts LinkedIn
-- **Suggestions de commentaires** contextuelles sous chaque post
-- **Remplissage au clic** (pas d'action automatique)
-- **Timer de session** avec objectifs et suivi en temps réel
+pnpm workspace with three apps:
 
-### Mode Agent
-- **Auto-like & auto-comment** avec timing humain (jitter, pauses aléatoires)
-- **Scroll intelligent** simulant un comportement naturel
-- **Multi-sessions** avec quotas journaliers (150 likes, 50 comments/jour max)
-- **256+ messages** de commentaire pré-écrits avec variation de skin tone
-- **Déduplication** des posts traités
-- **Curseur virtuel** simulant le mouvement de souris
-
-### Interface Popup (4 onglets)
-1. **Session** — Timer circulaire, checklist d'actions, compteurs live
-2. **Suivi** — Historique, graphiques de croissance, filtres par période
-3. **Templates** — Bibliothèque de messages, copie au clic, catégories
-4. **Réglages** — Durée, objectifs, vitesse, toggles, mode Agent avancé
-
-### Backend API
-- **Auth** — Inscription/connexion avec JWT
-- **Events** — Tracking de toutes les actions avec analytics
-- **Stats** — Agrégats par période avec charts
-- **Lead magnet** — Capture d'email et envoi de l'ebook gratuit
-- **Emails** — Bienvenue, ebook, reset password (Resend)
-
----
-
-## Stack technique
-
-| Couche | Technologies |
-|--------|-------------|
-| Extension | React 18, TypeScript, Vite + CRXJS, Tailwind CSS 4, Zustand |
-| Design | Tokens CSS custom (Lama Design System), composants Lama* |
-| Content Scripts | Vanilla TS, DOM LinkedIn, Chrome APIs |
-| API | Node.js, Express, Prisma ORM, PostgreSQL |
-| Emails | Resend (API HTTP transactionnelle) |
-| CI/CD | GitHub Actions (lint, test, build) |
-
----
-
-## Structure du projet
-
-```
-├── apps/
-│   ├── extension/              # Extension Chrome
-│   │   ├── src/
-│   │   │   ├── background/     # Service worker
-│   │   │   ├── content/        # Content scripts (assist + agent)
-│   │   │   ├── popup/          # Popup React (tabs, store, components)
-│   │   │   ├── components/     # Design system (lama/ + ui/)
-│   │   │   ├── lib/            # Utils, storage, API client
-│   │   │   ├── styles/         # Tailwind, tokens, fonts
-│   │   │   └── types/          # TypeScript types & defaults
-│   │   ├── vite.config.ts
-│   │   └── package.json
-│   └── api/                    # Backend Node/Express
-│       ├── src/
-│       │   ├── routes/         # auth, events, lead
-│       │   ├── middleware/     # JWT auth
-│       │   ├── services/       # Email templates
-│       │   └── db/             # Seed data
-│       ├── prisma/
-│       │   └── schema.prisma
-│       └── package.json
-├── .github/workflows/ci.yml
-├── pnpm-workspace.yaml
-└── package.json
-```
-
----
-
-## Installation & Développement
-
-### Prérequis
-- Node.js 20+
-- pnpm 9+
-- PostgreSQL 15+
-
-### 1. Cloner et installer
-
-```bash
-git clone <repo-url>
-cd "Lama LinkedIn"
-pnpm install
-```
-
-### 2. Configurer l'environnement
-
-```bash
-# API
-cp apps/api/.env.example apps/api/.env
-# Modifier DATABASE_URL, JWT_SECRET, RESEND_API_KEY
-```
-
-### 3. Initialiser la base de données
-
-```bash
-pnpm db:migrate    # Crée les tables
-pnpm db:seed       # Ajoute un utilisateur demo
-```
-
-### 4. Lancer en développement
-
-```bash
-# Terminal 1 — API
-pnpm dev:api
-
-# Terminal 2 — Extension
-pnpm dev:extension
-```
-
-### 5. Charger l'extension dans Chrome
-
-1. Ouvrir `chrome://extensions/`
-2. Activer le **Mode développeur**
-3. Cliquer **Charger l'extension non empaquetée**
-4. Sélectionner le dossier `apps/extension/dist/`
-5. Ouvrir `linkedin.com/feed` et cliquer sur l'icône Lama
-
-### 6. Build production
-
-```bash
-pnpm build              # Build extension + API
-```
-
-Le dossier `apps/extension/dist/` contient l'extension prête pour le Chrome Web Store.
-
----
-
-## Tests
-
-```bash
-pnpm test               # Tous les tests
-```
-
----
-
-## Sécurité & RGPD
-
-- **Consentement** : L'utilisateur choisit explicitement son mode (Assisté ou Agent)
-- **Minimisation** : Seules les données nécessaires sont collectées (type d'action, timestamp)
-- **Stockage local** : Les données de session restent dans `chrome.storage.local`
-- **Pas de revente** : Aucune donnée LinkedIn n'est transmise à des tiers
-- **Chiffrement** : Mots de passe hashés bcrypt, JWT signé, HTTPS obligatoire
-- **Droit à l'oubli** : Suppression de compte via l'API
-
----
-
-## Comptes de test
-
-| Email | Mot de passe |
-|-------|-------------|
-| demo@lama-linkedin.com | demo123 |
-
----
-
----
-
-# Lama LinkedIn — LinkedIn Bot Pro (English)
-
-**Smart Chrome Extension for LinkedIn** with dual mode: Assisted (guided manual) and Agent (full automation).
+| App | Role | Stack |
+|-----|------|-------|
+| `apps/extension` | Chrome extension (MV3) | React 18, TypeScript, Vite 6 + CRXJS, Tailwind 4, Zustand, Recharts |
+| `apps/web` | Marketing funnel & dashboard | React 18, TypeScript, Vite 6, React Router 7, Motion, Recharts, Tailwind 4 |
+| `apps/api` | Backend API | Node.js, Express, Prisma ORM, PostgreSQL, Upstash Redis, Resend |
 
 ---
 
@@ -176,77 +20,159 @@ pnpm test               # Tous les tests
 
 ### Assisted Mode
 - **Highlights** on LinkedIn post Like buttons
-- **Comment suggestions** shown below each post
-- **Fill-on-click** (no automatic actions)
+- **Contextual comment suggestions** under each post
+- **Fill-on-click** — nothing is sent automatically
 - **Session timer** with goals and real-time tracking
 
 ### Agent Mode
 - **Auto-like & auto-comment** with human-like timing (jitter, random pauses)
-- **Smart scrolling** simulating natural behavior
+- **Smart scrolling** that simulates natural behavior
 - **Multi-session** support with daily quotas (150 likes, 50 comments/day max)
-- **256+ pre-written** comment messages with skin tone variation
-- **Post deduplication**
+- **256+ pre-written** comment messages with skin-tone variation
+- **Post deduplication** so the same post is never actioned twice
 - **Virtual cursor** simulating mouse movement
 
 ### Popup UI (4 tabs)
-1. **Session** — Circular timer, action checklist, live counters
-2. **Tracking** — History, growth charts, period filters
-3. **Templates** — Message library, one-click copy, categories
-4. **Settings** — Duration, goals, speed, toggles, advanced Agent mode
+1. **Session** — circular timer, action checklist, live counters
+2. **Tracking** — history, growth charts, period filters
+3. **Templates** — message library, one-click copy, categories
+4. **Settings** — duration, goals, speed, toggles, advanced Agent mode
 
-### Backend API
-- **Auth** — Register/login with JWT
-- **Events** — Full action tracking with analytics
-- **Stats** — Period-based aggregates with charts
-- **Lead magnet** — Email capture and free ebook delivery
-- **Emails** — Welcome, ebook, password reset (Resend)
+### Web funnel (`apps/web`)
+- Landing page with **free ebook** lead magnet
+- Auth pages (register / login / forgot & reset password)
+- Dashboard with real activity stats
+- Legal pages (privacy, terms)
 
----
-
-## Tech Stack
-
-| Layer | Technologies |
-|-------|-------------|
-| Extension | React 18, TypeScript, Vite + CRXJS, Tailwind CSS 4, Zustand |
-| Design | Custom CSS tokens (Lama Design System), Lama* components |
-| Content Scripts | Vanilla TS, LinkedIn DOM, Chrome APIs |
-| API | Node.js, Express, Prisma ORM, PostgreSQL |
-| Emails | Resend (transactional HTTP API) |
-| CI/CD | GitHub Actions (lint, test, build) |
+### Backend API (`apps/api`)
+- **Auth** — register/login with JWT, password reset via email
+- **Events** — full action tracking with analytics
+- **Stats** — period-based aggregates
+- **Lead magnet** — email capture and free ebook delivery
+- **Emails** — welcome, ebook, password reset (Resend HTTP API)
 
 ---
 
-## Quick Start
+## Security
 
-```bash
-# Install
-pnpm install
+- **JWT** signed; the API refuses to boot in production without `JWT_SECRET`
+- **Passwords** hashed with bcrypt; timing-safe compare with anti-enumeration on login
+- **CORS** pinned to the published extension ID and allow-listed web origins in production
+- **Rate limiting** (Upstash Redis, sliding window) on login, register, password reset and lead capture
+- **HTML escaping** of user input injected into transactional emails
+- **Password-reset tokens** stored as SHA-256 hashes with a 1-hour expiry
+- **Extension ↔ web** messaging scoped with `postMessage` `targetOrigin`
 
-# Setup database
-cp apps/api/.env.example apps/api/.env
-pnpm db:migrate
-pnpm db:seed
+## Privacy & GDPR
 
-# Development
-pnpm dev:api        # Terminal 1
-pnpm dev:extension  # Terminal 2
+- **Consent** — the user explicitly chooses Assisted or Agent mode
+- **Data minimization** — only action type and timestamp are collected
+- **Local storage** — session data stays in `chrome.storage.local`
+- **No resale** — no LinkedIn data is sent to third parties
+- **Right to erasure** — account deletion via the API
 
-# Load extension: chrome://extensions/ -> Load unpacked -> apps/extension/dist/
+---
 
-# Production build
-pnpm build
+## Project structure
+
+```
+├── apps/
+│   ├── extension/              # Chrome extension (MV3)
+│   │   └── src/
+│   │       ├── background/     # Service worker
+│   │       ├── content/        # Content scripts (assist + agent)
+│   │       ├── popup/          # React popup (tabs, store, components)
+│   │       ├── components/     # Design system (lama/ + ui/)
+│   │       ├── lib/            # Utils, storage, API client
+│   │       ├── styles/         # Tailwind, tokens, fonts
+│   │       └── types/          # TypeScript types & defaults
+│   ├── web/                    # Marketing funnel & dashboard
+│   │   └── src/app/            # Pages, routes, components, lib
+│   └── api/                    # Node/Express backend
+│       ├── src/
+│       │   ├── routes/         # auth, events, lead
+│       │   ├── middleware/     # auth, rate limiter, security headers
+│       │   ├── services/       # email templates
+│       │   └── db/             # Prisma client, Redis, seed
+│       └── prisma/schema.prisma
+├── .github/workflows/ci.yml
+├── pnpm-workspace.yaml
+└── package.json
 ```
 
 ---
 
-## Security & GDPR
+## Getting started
 
-- **Consent**: User explicitly chooses their mode (Assisted or Agent)
-- **Data minimization**: Only necessary data collected (action type, timestamp)
-- **Local storage**: Session data stays in `chrome.storage.local`
-- **No data resale**: No LinkedIn data transmitted to third parties
-- **Encryption**: Bcrypt passwords, signed JWT, HTTPS required
-- **Right to erasure**: Account deletion via API
+### Prerequisites
+- Node.js 20+
+- pnpm 10+
+- PostgreSQL 15+
+- An Upstash Redis instance (rate limiting & caching)
+
+### 1. Install
+
+```bash
+git clone <repo-url>
+cd "Lama LinkedIn"
+pnpm install
+```
+
+### 2. Configure the API environment
+
+```bash
+cp apps/api/.env.example apps/api/.env
+# Set DATABASE_URL, JWT_SECRET, RESEND_API_KEY,
+# UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
+```
+
+### 3. Initialize the database
+
+```bash
+pnpm db:migrate    # create tables
+pnpm db:seed       # add a demo user (dev only — refused in production)
+```
+
+### 4. Run in development
+
+```bash
+pnpm dev:api                      # API
+pnpm dev:extension                # Extension
+pnpm --filter @lbp/web dev        # Web funnel
+```
+
+### 5. Load the extension in Chrome
+
+1. Open `chrome://extensions/`
+2. Enable **Developer mode**
+3. Click **Load unpacked**
+4. Select `apps/extension/dist/`
+5. Open `linkedin.com/feed` and click the Lama icon
+
+### 6. Production build
+
+```bash
+pnpm build                        # extension + API
+pnpm --filter @lbp/web build      # web funnel
+```
+
+`apps/extension/dist/` holds the extension ready for the Chrome Web Store.
+
+---
+
+## Tests
+
+```bash
+pnpm test                         # extension + API (vitest)
+```
+
+---
+
+## Demo account (dev only)
+
+| Email | Password |
+|-------|----------|
+| demo@lama-linkedin.com | demo123 |
 
 ---
 
