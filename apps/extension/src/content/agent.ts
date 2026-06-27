@@ -213,10 +213,7 @@ function scrollBy(container: HTMLElement, amount: number): void {
   container.dispatchEvent(new Event('scroll', { bubbles: true }));
 }
 
-/**
- * Click the "Charger plus" / "Load more" button if present at the bottom of the feed.
- * LinkedIn 2025+ paginates the feed with this button instead of pure infinite scroll.
- */
+// LinkedIn 2025+ pagine le feed avec un bouton "Charger plus" plutôt qu'un scroll infini.
 async function clickLoadMoreIfPresent(): Promise<boolean> {
   const feedList = document.querySelector('[role="list"]');
   if (!feedList) return false;
@@ -259,9 +256,7 @@ async function smoothScroll(level: number, isRunning: () => boolean, isPaused: (
     await sleep(jitter(80, level));
   }
 
-  // Phase 2: fluid, human-like scroll (~1.4x viewport). Small constant pixel
-  // steps at ~60fps read as smooth; the speed level only nudges the pace, and
-  // the first/last frames ease in and out so it never jerks.
+  // Phase 2 : scroll fluide ~1.4x viewport, pas constants ~60fps + ease in/out (humain).
   const dist = Math.max(800, window.innerHeight * 1.4) + Math.random() * 300;
   const ppf = [2.0, 2.8, 3.6, 4.6, 5.8, 7.2][clamp(level, 0, 5)];
   const frames = Math.max(30, Math.floor(dist / ppf));
@@ -289,10 +284,7 @@ async function smoothScroll(level: number, isRunning: () => boolean, isPaused: (
   await sleep(jitter(200, level));
 }
 
-/**
- * Scroll agressif pour quand aucun post n'est trouvé.
- * Scroll beaucoup plus loin, clique "Charger plus", attend le lazy-load.
- */
+// Scroll agressif quand aucun post n'est trouvé : va plus loin, clique "Charger plus", attend le lazy-load.
 async function aggressiveScroll(level: number, isRunning: () => boolean, isPaused: () => boolean): Promise<void> {
   scrollPaused = false;
   isTyping = false;
@@ -302,8 +294,7 @@ async function aggressiveScroll(level: number, isRunning: () => boolean, isPause
 
   const container = getScrollContainer();
 
-  // Scroll briskly through 2.5 viewport heights to escape an empty stretch,
-  // but keep a steady ~60fps cadence so it still looks like a human flick.
+  // ~2.5x viewport à cadence ~60fps pour sortir d'une zone vide sans à-coups.
   const dist = window.innerHeight * 2.5 + Math.random() * 500;
   const ppf = 6 + level * 1.5;
   const frames = Math.floor(dist / ppf);
