@@ -185,11 +185,10 @@ export function assistMode(
       buildSuggestionChips(post, bar);
     });
 
-    // Drop the bar on its own full-width line *below* the whole comment box.
-    // If the anchor lives in a horizontal flex row, a plain sibling insert
-    // would squeeze it in beside the editor (and shove the "Commenter" button
-    // out of the box), so we let the row wrap and force the bar to span 100%.
-    const placeBar = (anchor: Element) => {
+    // Place the bar on its own full-width line BELOW the whole comment box —
+    // under the editor AND its toolbar (emoji/GIF/photo/"Commenter"), never wedged
+    // inside the editor where it would hide the typed text and the send button.
+    const placeAfter = (anchor: Element) => {
       anchor.insertAdjacentElement('afterend', bar);
       const parent = bar.parentElement;
       if (parent && getComputedStyle(parent).display.includes('flex')) {
@@ -198,29 +197,36 @@ export function assistMode(
       }
     };
 
-    // Ember renderer: anchor on the outer box so the bar lands under the
-    // editor AND its toolbar (emoji/image/Commenter), never between them.
-    const commentBox = post.querySelector('.comments-comment-box--cr, .comments-comment-box');
+    // Toolbar landmarks (stable LinkedIn icon ids + aria-labels). They sit just
+    // outside the inner editor box but inside the comment-box frame.
+    const TOOLBAR_SEL =
+      'svg#emoji-medium, svg#image-medium, svg#gif-medium, ' +
+      'button[aria-label*="photo" i], button[aria-label*="gif" i]';
+
+    // React/tiptap renderer: climb from the editor to the lowest ancestor that
+    // ALSO contains the toolbar, then drop the bar after that frame.
+    const tiptap = post.querySelector('[data-testid="ui-core-tiptap-text-editor-wrapper"]');
+    if (tiptap) {
+      let frame: Element | null = tiptap.parentElement;
+      while (frame && frame !== post && !frame.querySelector(TOOLBAR_SEL)) {
+        frame = frame.parentElement;
+      }
+      if (frame && frame !== post && frame.querySelector(TOOLBAR_SEL)) {
+        placeAfter(frame);
+      } else {
+        placeAfter(tiptap.closest('[componentkey^="commentBox" i]') || tiptap.parentElement || tiptap);
+      }
+      return;
+    }
+
+    // Ember renderer: anchor on the outer comment box so the bar lands under the
+    // editor AND its toolbar, never between them.
+    const commentBox = post.querySelector('.comments-comment-box--cr, .comments-comment-box, form.comments-comment-box__form');
     if (commentBox) {
-      placeBar(commentBox);
+      placeAfter(commentBox);
       return;
     }
-    // React/tiptap renderer.
-    const reactWrapper = post.querySelector('[data-testid="ui-core-tiptap-text-editor-wrapper"]');
-    if (reactWrapper) {
-      placeBar(reactWrapper.closest('[componentkey*="commentBox" i]') || reactWrapper.parentElement || reactWrapper);
-      return;
-    }
-    const reactBox = post.querySelector('[componentkey*="commentBox" i]');
-    if (reactBox) {
-      placeBar(reactBox);
-      return;
-    }
-    const commentForm = post.querySelector('form.comments-comment-box__form');
-    if (commentForm) {
-      placeBar(commentForm);
-      return;
-    }
+
     post.appendChild(bar);
   }
 

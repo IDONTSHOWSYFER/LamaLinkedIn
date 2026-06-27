@@ -3,6 +3,9 @@ const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const FROM = process.env.EMAIL_FROM || 'Lama Linked.In <noreply@lamalinked.in>';
 const REPLY_TO = process.env.EMAIL_REPLY_TO || 'heycestlelama@gmail.com';
 const SEND_TIMEOUT_MS = 10_000;
+// Liens utilisateur (ebook, reset) : toujours le domaine canonique, jamais l'URL
+// de preview Vercel que FRONTEND_URL peut contenir côté hébergeur.
+const SITE_URL = (process.env.PUBLIC_SITE_URL || 'https://www.lamalinked.in').replace(/\/$/, '');
 
 function escapeHtml(input: string): string {
   return input
@@ -87,7 +90,7 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<void> 
 
 export async function sendEbookEmail(to: string, firstName: string): Promise<void> {
   const logoUrl = 'https://raw.githubusercontent.com/IDONTSHOWSYFER/LamaLinkedIn/main/apps/extension/src/assets/icons/logo.png';
-  const ebookUrl = `${process.env.FRONTEND_URL || 'https://lamalinked.in'}/ebook/playbook_linkedin.pdf`;
+  const ebookUrl = `${SITE_URL}/ebook/playbook_linkedin.pdf`;
 
   await sendEmail({
     to,
@@ -205,7 +208,7 @@ export async function sendEbookEmail(to: string, firstName: string): Promise<voi
 }
 
 export async function sendPasswordResetEmail(to: string, resetToken: string): Promise<void> {
-  const resetUrl = `${process.env.FRONTEND_URL || 'https://lamalinked.in'}/reset-password?token=${resetToken}`;
+  const resetUrl = `${SITE_URL}/reset-password?token=${resetToken}`;
   await sendEmail({
     to,
     subject: 'Réinitialisation de mot de passe — Lama Linked.In',

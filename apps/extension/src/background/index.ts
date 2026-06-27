@@ -41,6 +41,15 @@ chrome.runtime.onMessage.addListener((msg, _sender) => {
       }
     });
   }
+
+  // Pont d'auth : le site web transmet le token de connexion, on le stocke pour
+  // que les actions soient synchronisées au compte (suivi temps réel du dashboard).
+  if (msg?.type === 'LBP_STORE_AUTH' && msg.token) {
+    chrome.storage.local.set({ lbp_auth: { token: msg.token, user: msg.user } });
+  }
+  if (msg?.type === 'LBP_CLEAR_AUTH') {
+    chrome.storage.local.remove('lbp_auth');
+  }
 });
 
 // Keep service worker alive during bot sessions

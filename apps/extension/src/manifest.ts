@@ -17,6 +17,15 @@ const manifest: ManifestV3Export = {
       js: ['src/content/index.ts'],
       run_at: 'document_idle',
     },
+    {
+      matches: [
+        'https://lamalinked.in/*',
+        'https://www.lamalinked.in/*',
+        'https://lama-linked-in-web.vercel.app/*',
+      ],
+      js: ['src/content/auth-bridge.ts'],
+      run_at: 'document_idle',
+    },
   ],
   action: {
     default_popup: 'src/popup/index.html',

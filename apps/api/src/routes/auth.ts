@@ -212,6 +212,17 @@ authRouter.put('/password', authMiddleware, async (req: AuthRequest, res: Respon
   }
 });
 
+// Suppression de compte (RGPD) : la cascade Prisma efface events et sessions liés.
+authRouter.delete('/me', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    await prisma.user.delete({ where: { id: req.userId } });
+    res.json({ message: 'Compte et données supprimés.' });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 // Réponse toujours générique : anti-énumération de comptes (OWASP).
 authRouter.post('/forgot-password', forgotLimiter, async (req: Request, res: Response): Promise<void> => {
   const genericMessage = 'Si un compte existe pour cette adresse, un email de réinitialisation a été envoyé.';

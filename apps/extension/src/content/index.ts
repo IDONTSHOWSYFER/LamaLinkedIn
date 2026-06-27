@@ -6,6 +6,13 @@ import { injectPanel, updatePanel, updatePanelTimer, updatePanelStatus, removePa
 import { log, error } from '@/lib/log';
 import { contextAlive, registerTeardown } from './context';
 
+// Chrome peut injecter ce script deux fois (auto-injection du manifest +
+// executeScript depuis le popup). On reste inerte au second passage pour ne
+// jamais enregistrer de listener en double ni peindre un second panneau.
+const __lbpWin = window as unknown as { __lbpInjected?: boolean };
+const alreadyInjected = __lbpWin.__lbpInjected === true;
+__lbpWin.__lbpInjected = true;
+
 log('Content script loaded on', window.location.href);
 
 let running = false;
@@ -194,7 +201,7 @@ function stop() {
   try { chrome.runtime.sendMessage({ type: 'LBP_BADGE', text: '', color: '#0A66C2' }); } catch {}
 }
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+if (!alreadyInjected) chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'LBP_START') {
     start(msg.payload.mode, msg.payload.reset !== false).then(() => {
       sendResponse({ ok: true });
@@ -249,7 +256,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return false;
 });
 
-(async () => {
+if (!alreadyInjected) (async () => {
   const session = await getSession();
   if (session.botState === 'running' && session.startedAt) {
     const config = await getConfig();

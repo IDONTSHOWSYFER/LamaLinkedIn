@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Settings, Activity, Users, Download, Star, TrendingUp, Zap, PlayCircle, BookOpen, Target, BarChart3, Calendar, ExternalLink, X } from 'lucide-react';
+import { Settings, Activity, Download, Star, TrendingUp, Zap, PlayCircle, BookOpen, Target, BarChart3, Calendar, ExternalLink, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { motion } from 'motion/react';
@@ -19,27 +19,34 @@ interface ApiStats {
 }
 
 interface StatsData {
-  requests: number;
-  connections: number;
-  messages: number;
-  responseRate: number;
-  requestsChange: string;
-  connectionsRate: string;
-  messagesChange: string;
-  responseRateChange: string;
-  chartData: Array<{ date: string; requetes: number; connexions: number; messages: number }>;
-  recentEvents: Array<{ name: string; type: string; status: string; date: string }>;
+  likes: number;
+  comments: number;
+  total: number;
+  chartData: Array<{ date: string; likes: number; comments: number }>;
+  recentEvents: Array<{ name: string; type: string; mode: string; date: string }>;
 }
 
-const DEFAULT_CHART_DATA = [
-  { date: 'Lun', requetes: 45, connexions: 12, messages: 28 },
-  { date: 'Mar', requetes: 62, connexions: 18, messages: 35 },
-  { date: 'Mer', requetes: 58, connexions: 15, messages: 42 },
-  { date: 'Jeu', requetes: 71, connexions: 22, messages: 38 },
-  { date: 'Ven', requetes: 89, connexions: 28, messages: 52 },
-  { date: 'Sam', requetes: 34, connexions: 8, messages: 15 },
-  { date: 'Dim', requetes: 22, connexions: 5, messages: 10 },
-];
+const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+// Construit la série du graphique à partir des vrais évènements (likes vs
+// commentaires), regroupés par heure (jour) ou par date (semaine/mois).
+function buildChart(events: ApiStats['recentEvents'], period: 'today' | 'week' | 'month') {
+  const buckets = new Map<string, { date: string; likes: number; comments: number; ts: number }>();
+  for (const e of events) {
+    const d = new Date(e.createdAt);
+    const key = period === 'today' ? String(d.getHours()) : d.toISOString().slice(0, 10);
+    const label = period === 'today'
+      ? `${String(d.getHours()).padStart(2, '0')}h`
+      : period === 'month'
+        ? d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+        : DAY_LABELS[d.getDay()];
+    const b = buckets.get(key) || { date: label, likes: 0, comments: 0, ts: d.getTime() };
+    if (e.type === 'like') b.likes++;
+    else if (e.type === 'comment') b.comments++;
+    buckets.set(key, b);
+  }
+  return [...buckets.values()].sort((a, b) => a.ts - b.ts).map(({ date, likes, comments }) => ({ date, likes, comments }));
+}
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -53,23 +60,15 @@ export function Dashboard() {
     setLoading(true);
     api<ApiStats>(`/events/stats?period=${dateRange}`)
       .then((data) => {
-        // Map API response to dashboard format
-        const connections = data.dailyBreakdown?.find(d => d.type === 'connection')?._count || 0;
-        const messages = data.dailyBreakdown?.find(d => d.type === 'message')?._count || 0;
         const mapped: StatsData = {
-          requests: data.total || 0,
-          connections,
-          messages,
-          responseRate: data.total > 0 ? Math.round((data.comments / data.total) * 100) : 0,
-          requestsChange: `${data.total}`,
-          connectionsRate: connections > 0 ? `${Math.round((connections / data.total) * 100)}%` : '0%',
-          messagesChange: `${messages}`,
-          responseRateChange: `${data.likes} likes`,
-          chartData: DEFAULT_CHART_DATA,
+          likes: data.likes || 0,
+          comments: data.comments || 0,
+          total: data.total || 0,
+          chartData: buildChart(data.recentEvents || [], dateRange),
           recentEvents: (data.recentEvents || []).slice(0, 10).map(e => ({
-            name: e.authorName || 'Interaction LinkedIn',
-            type: e.type,
-            status: e.mode || 'assist',
+            name: e.authorName || 'Post LinkedIn',
+            type: e.type === 'like' ? 'Like' : e.type === 'comment' ? 'Commentaire' : e.type,
+            mode: e.mode === 'agent' ? 'Agent' : 'Assisté',
             date: new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
           })),
         };
@@ -79,46 +78,42 @@ export function Dashboard() {
       .finally(() => setLoading(false));
   }, [dateRange]);
 
-  const chartData = stats?.chartData || DEFAULT_CHART_DATA;
-  const recentEvents = stats?.recentEvents || [
-    { name: "Directeurs Marketing Paris", type: "Campagne", status: "Active", date: "08 Mar 2026" },
-    { name: "SDR et Commerciaux", type: "Campagne", status: "Terminee", date: "05 Mar 2026" },
-    { name: "Founders B2B SaaS", type: "Campagne", status: "Active", date: "01 Mar 2026" },
-  ];
+  const periodLabel = dateRange === 'today' ? "aujourd'hui" : dateRange === 'week' ? 'cette semaine' : 'ce mois';
+  const chartData = stats?.chartData || [];
+  const recentEvents = stats?.recentEvents || [];
 
   const statCards = [
     {
       icon: <Activity size={24} />,
-      label: 'Requetes',
-      value: stats?.requests?.toLocaleString() || '2,450',
-      change: stats?.requestsChange || '+12%',
+      label: 'Actions totales',
+      value: (stats?.total ?? 0).toLocaleString('fr-FR'),
       color: 'primary',
-      subtext: `Cette ${dateRange === 'today' ? 'journee' : dateRange === 'week' ? 'semaine' : 'mois'}`
+      subtext: periodLabel,
     },
     {
-      icon: <Users size={24} />,
-      label: 'Profils connectes',
-      value: stats?.connections?.toLocaleString() || '342',
-      change: stats?.connectionsRate || '28%',
+      icon: <Star size={24} fill="currentColor" />,
+      label: 'Likes',
+      value: (stats?.likes ?? 0).toLocaleString('fr-FR'),
       color: 'accent',
-      subtext: "Taux d'acceptation"
+      subtext: periodLabel,
     },
     {
       icon: <TrendingUp size={24} />,
-      label: 'Messages envoyes',
-      value: stats?.messages?.toLocaleString() || '1,284',
-      change: stats?.messagesChange || '+18%',
+      label: 'Commentaires',
+      value: (stats?.comments ?? 0).toLocaleString('fr-FR'),
       color: 'success',
-      subtext: 'vs periode precedente'
+      subtext: periodLabel,
     },
     {
       icon: <BarChart3 size={24} />,
-      label: 'Taux de reponse',
-      value: stats?.responseRate ? `${stats.responseRate}%` : '38%',
-      change: stats?.responseRateChange || '+5%',
+      label: 'Moyenne / jour',
+      value: (dateRange === 'today'
+        ? (stats?.total ?? 0)
+        : Math.round((stats?.total ?? 0) / (dateRange === 'week' ? 7 : 30))
+      ).toLocaleString('fr-FR'),
       color: 'warning',
-      subtext: 'vs periode precedente'
-    }
+      subtext: 'actions',
+    },
   ];
 
   return (
@@ -229,10 +224,7 @@ export function Dashboard() {
                 <h3 className="text-neutral-400 font-medium text-sm">{stat.label}</h3>
               </div>
               <div className="text-4xl font-bold text-adaptive mb-1">{stat.value}</div>
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-success font-medium">{stat.change}</div>
-                <div className="text-sm text-neutral-500">{stat.subtext}</div>
-              </div>
+              <div className="text-sm text-adaptive-muted capitalize">{stat.subtext}</div>
             </GlassCard>
           </motion.div>
         ))}
@@ -271,17 +263,20 @@ export function Dashboard() {
                     fontSize: '12px',
                   }}
                 />
-                <Area type="monotone" dataKey="requetes" stroke="#0A66C2" fillOpacity={1} fill="url(#colorRequetes)" strokeWidth={2} />
-                <Area type="monotone" dataKey="connexions" stroke="#F4B183" fillOpacity={1} fill="url(#colorConnexions)" strokeWidth={2} />
-                <Area type="monotone" dataKey="messages" stroke="#16A34A" fillOpacity={1} fill="url(#colorMessages)" strokeWidth={2} />
+                <Area type="monotone" dataKey="likes" name="Likes" stroke="#0A66C2" fillOpacity={1} fill="url(#colorRequetes)" strokeWidth={2} />
+                <Area type="monotone" dataKey="comments" name="Commentaires" stroke="#F4B183" fillOpacity={1} fill="url(#colorConnexions)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex items-center justify-center gap-6 mt-4 text-xs text-neutral-400">
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary" /> Requetes</div>
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-accent" /> Connexions</div>
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-success" /> Messages</div>
+          <div className="flex items-center justify-center gap-6 mt-4 text-xs text-adaptive-muted">
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary" /> Likes</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-accent" /> Commentaires</div>
           </div>
+          {chartData.length === 0 && !loading && (
+            <p className="text-center text-sm text-adaptive-muted mt-4">
+              Aucune action enregistrée sur cette période. Connectez-vous et lancez l'extension sur LinkedIn — vos likes et commentaires s'afficheront ici en temps réel.
+            </p>
+          )}
         </GlassCard>
       </div>
 
@@ -353,41 +348,38 @@ export function Dashboard() {
       {/* Recent Activity Table */}
       <div className="mb-10">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-adaptive">Activite recente</h2>
-          <Button variant="outline" size="sm">
-            <Target className="mr-2" size={16} /> Nouvelle campagne
-          </Button>
+          <h2 className="text-2xl font-bold text-adaptive">Activité récente</h2>
         </div>
 
         <GlassCard className="overflow-hidden border-white/5">
-          <table className="w-full text-left text-sm text-neutral-400">
-            <thead className="bg-white/5 text-neutral-300 uppercase font-medium text-xs border-b border-white/10">
+          <table className="w-full text-left text-sm text-adaptive-muted">
+            <thead className="bg-white/5 text-adaptive-secondary uppercase font-medium text-xs border-b border-white/10">
               <tr>
-                <th className="px-6 py-4">Campagne</th>
+                <th className="px-6 py-4">Post / Auteur</th>
                 <th className="px-6 py-4">Type</th>
-                <th className="px-6 py-4">Statut</th>
+                <th className="px-6 py-4">Mode</th>
                 <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {recentEvents.map((item, i) => (
+              {recentEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-10 text-center text-adaptive-muted">
+                    Aucune activité pour le moment. Vos likes et commentaires LinkedIn apparaîtront ici.
+                  </td>
+                </tr>
+              ) : recentEvents.map((item, i) => (
                 <tr key={i} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 font-medium text-adaptive">{item.name}</td>
-                  <td className="px-6 py-4">{item.type}</td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      item.status === 'Active' ? 'bg-success/20 text-success' : 'bg-neutral-700 text-neutral-300'
+                      item.type === 'Like' ? 'bg-primary/20 text-primary' : 'bg-accent/20 text-accent'
                     }`}>
-                      {item.status}
+                      {item.type}
                     </span>
                   </td>
+                  <td className="px-6 py-4">{item.mode}</td>
                   <td className="px-6 py-4">{item.date}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-neutral-400 hover:text-adaptive transition-colors">
-                      <Settings size={16} />
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>
