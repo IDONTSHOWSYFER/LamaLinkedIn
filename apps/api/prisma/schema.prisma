@@ -12,16 +12,11 @@ model User {
   email     String   @unique
   password  String
   name      String
-  tier      String   @default("free")
-  installId String?  @unique
-  stripeCustomerId String?
-  premiumExpires   DateTime?
   resetToken       String?   @unique
   resetTokenExpiry DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   events    Event[]
-  sessions  Session[]
 }
 
 model Event {
@@ -38,19 +33,4 @@ model Event {
 
   @@index([userId, createdAt])
   @@index([userId, type])
-}
-
-model Session {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mode      String
-  likes     Int      @default(0)
-  comments  Int      @default(0)
-  duration  Int      @default(0)
-  startedAt DateTime
-  endedAt   DateTime?
-  createdAt DateTime @default(now())
-
-  @@index([userId, createdAt])
 }

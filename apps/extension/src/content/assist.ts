@@ -123,22 +123,51 @@ export function assistMode(
     const ed = findEditor(post);
     if (!ed) return;
     ed.focus();
+
+    // Sélectionne tout l'existant (y compris le placeholder vide) pour que
+    // l'insertion le remplace.
     const sel = window.getSelection();
-    if (sel) {
-      sel.selectAllChildren(ed);
-      sel.deleteFromDocument();
+    const range = document.createRange();
+    range.selectNodeContents(ed);
+    if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+
+    const landed = () => (ed.textContent || '').includes(text.slice(0, 10));
+
+    // 1) execCommand insertText : déclenche les évènements beforeinput/input que
+    //    Quill ET tiptap/ProseMirror écoutent — la méthode la plus fiable et qui
+    //    met à jour l'état interne de l'éditeur (le bouton « Commenter » s'active).
+    try { document.execCommand('insertText', false, text); } catch {}
+
+    // 2) Paste synthétique : certains builds ProseMirror n'acceptent le texte
+    //    que via un évènement paste.
+    if (!landed()) {
+      try {
+        const dt = new DataTransfer();
+        dt.setData('text/plain', text);
+        ed.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+      } catch {}
     }
-    if (ed.classList.contains('ql-editor')) {
-      document.execCommand('insertText', false, text);
-      if (!ed.textContent?.trim()) {
+
+    // 3) beforeinput/input insertText : dernière tentative structurée.
+    if (!landed()) {
+      try {
+        ed.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: text, bubbles: true, cancelable: true }));
+        ed.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: text, bubbles: true }));
+      } catch {}
+    }
+
+    // 4) Repli brut : écrit le texte et retire le placeholder, puis notifie.
+    if (!landed()) {
+      const p = ed.querySelector('p');
+      if (p) {
+        p.textContent = text;
+        p.classList.remove('is-empty', 'is-editor-empty');
+      } else {
         ed.textContent = text;
-        ed.dispatchEvent(new Event('input', { bubbles: true }));
       }
-    } else {
-      const dt = new DataTransfer();
-      dt.setData('text/plain', text);
-      ed.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+      ed.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: text, bubbles: true }));
     }
+    ed.focus();
   }
 
   function buildSuggestionChips(post: Element, bar: HTMLElement) {
