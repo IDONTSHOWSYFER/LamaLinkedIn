@@ -214,45 +214,30 @@ export function assistMode(
       buildSuggestionChips(post, bar);
     });
 
-    // Place the bar on its own full-width line BELOW the whole comment box —
-    // under the editor AND its toolbar (emoji/GIF/photo/"Commenter"), never wedged
-    // inside the editor where it would hide the typed text and the send button.
-    const placeAfter = (anchor: Element) => {
-      anchor.insertAdjacentElement('afterend', bar);
-      const parent = bar.parentElement;
-      if (parent && getComputedStyle(parent).display.includes('flex')) {
-        parent.style.flexWrap = 'wrap';
-        bar.style.flexBasis = '100%';
-      }
-    };
+    bar.style.display = 'block';
+    bar.style.width = '100%';
+    bar.style.clear = 'both';
 
-    // Toolbar landmarks (stable LinkedIn icon ids + aria-labels). They sit just
-    // outside the inner editor box but inside the comment-box frame.
-    const TOOLBAR_SEL =
-      'svg#emoji-medium, svg#image-medium, svg#gif-medium, ' +
-      'button[aria-label*="photo" i], button[aria-label*="gif" i]';
-
-    // React/tiptap renderer: climb from the editor to the lowest ancestor that
-    // ALSO contains the toolbar, then drop the bar after that frame.
+    // React/tiptap renderer : la boîte de SAISIE est un cadre bordé (style
+    // inline `border-color`) qui englobe l'éditeur + la toolbar + « Commenter ».
+    // On insère la barre APRÈS ce cadre → elle tombe sous tout, jamais coincée
+    // dans l'éditeur ni par-dessus le bouton d'envoi.
     const tiptap = post.querySelector('[data-testid="ui-core-tiptap-text-editor-wrapper"]');
     if (tiptap) {
-      let frame: Element | null = tiptap.parentElement;
-      while (frame && frame !== post && !frame.querySelector(TOOLBAR_SEL)) {
-        frame = frame.parentElement;
+      const frame =
+        tiptap.closest('div[style*="border-color"]') ||
+        tiptap.closest('[componentkey^="commentBox" i]') ||
+        tiptap.parentElement;
+      if (frame) {
+        frame.insertAdjacentElement('afterend', bar);
+        return;
       }
-      if (frame && frame !== post && frame.querySelector(TOOLBAR_SEL)) {
-        placeAfter(frame);
-      } else {
-        placeAfter(tiptap.closest('[componentkey^="commentBox" i]') || tiptap.parentElement || tiptap);
-      }
-      return;
     }
 
-    // Ember renderer: anchor on the outer comment box so the bar lands under the
-    // editor AND its toolbar, never between them.
+    // Ember renderer : on ancre sur la boîte de commentaire externe.
     const commentBox = post.querySelector('.comments-comment-box--cr, .comments-comment-box, form.comments-comment-box__form');
     if (commentBox) {
-      placeAfter(commentBox);
+      commentBox.insertAdjacentElement('afterend', bar);
       return;
     }
 
@@ -264,6 +249,7 @@ export function assistMode(
   // attribute likes/comments to the right post even when the button elements
   // are swapped out from under us on re-render.
   function onDocClick(e: Event) {
+   try {
     if (!isRunning() || isPaused()) return;
     const target = e.target as Element | null;
     const btn = target?.closest?.('button');
@@ -301,11 +287,13 @@ export function assistMode(
         likeBtn.classList.remove(HIGHLIGHT_CLASS);
       }
     }
+   } catch { /* jamais remonter au reporter d'erreurs global de LinkedIn */ }
   }
 
   document.addEventListener('click', onDocClick, true);
 
   function refreshHighlights() {
+   try {
     if (!isRunning() || isPaused()) return;
     const posts = findAllPosts();
     recordSelectorHealth(posts);
@@ -326,6 +314,7 @@ export function assistMode(
         }
       }
     }
+   } catch { /* jamais remonter au reporter d'erreurs global de LinkedIn */ }
   }
 
   const observer = new MutationObserver(() => refreshHighlights());
