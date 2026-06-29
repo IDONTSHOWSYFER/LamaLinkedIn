@@ -7,5 +7,15 @@ export default defineConfig({
     // pour ne pas faire échouer les tests sur une machine/CI chargée.
     testTimeout: 30000,
     hookTimeout: 30000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/**/*.ts'],
+      // On exclut le bootstrap (démarrage serveur/migrations), le seed et le
+      // client Prisma (instanciation pure, mockée dans les tests).
+      // email.ts = service d'emails Resend (235 lignes, surtout des templates HTML
+      // + appel réseau externe) : exclu de la couverture, non pertinent à tester unitairement.
+      exclude: ['src/**/*.test.ts', 'src/__tests__/**', 'src/index.ts', 'src/db/seed.ts', 'src/db/client.ts', 'src/services/email.ts'],
+    },
   },
 });
