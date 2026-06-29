@@ -1,10 +1,12 @@
 import express, { type Express, Request, Response } from 'express';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
 import { authRouter } from './routes/auth.js';
 import { eventsRouter } from './routes/events.js';
 import { leadRouter } from './routes/lead.js';
 import { securityHeaders, cacheControl, performanceLogger } from './middleware/greenIt.js';
 import { rateLimiter } from './middleware/rateLimiter.js';
+import { openapiSpec } from './openapi.js';
 
 // Application Express configurée (sans listen ni migrations) :
 // importable telle quelle par les tests d'intégration (Supertest).
@@ -36,6 +38,11 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// Documentation OpenAPI / Swagger (avant les en-têtes OWASP : la CSP stricte
+// bloquerait les scripts inline de Swagger UI). Spec brute + UI interactive.
+app.get('/api/openapi.json', (_req: Request, res: Response) => res.json(openapiSpec));
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, { customSiteTitle: 'Lama Linked.In — API' }));
 
 app.use(securityHeaders);
 app.use(cacheControl);
