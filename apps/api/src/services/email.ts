@@ -81,7 +81,8 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<void> 
         </div>
         <p style="color: #9CA3AF; font-size: 12px; text-align: center; margin-top: 32px;">
           Lama Linked.In — Votre assistant Linked.In intelligent<br>
-          <a href="https://lamalinked.in" style="color: #0A66C2;">lamalinked.in</a>
+          <a href="https://lamalinked.in" style="color: #0A66C2;">lamalinked.in</a><br>
+          <a href="mailto:${REPLY_TO}?subject=Desabonnement" style="color: #C4C4CC; font-size: 11px;">Se désabonner</a>
         </p>
       </div>
     `,
@@ -198,6 +199,7 @@ export async function sendEbookEmail(to: string, firstName: string): Promise<voi
   <p style="color:#9CA3AF;font-size:12px;margin:0 0 4px;">Lama Linked.In — Votre assistant LinkedIn intelligent</p>
   <p style="margin:8px 0 0;"><a href="https://www.lamalinked.in" style="color:#1800AD;font-size:12px;text-decoration:none;font-weight:500;">lamalinked.in</a></p>
   <p style="color:#c4c4cc;font-size:11px;margin:16px 0 0;">Vous recevez cet email car vous avez demandé notre ebook gratuit.</p>
+  <p style="margin:6px 0 0;"><a href="mailto:${REPLY_TO}?subject=Desabonnement" style="color:#c4c4cc;font-size:11px;text-decoration:underline;">Se désabonner</a></p>
 </td></tr>
 
 </table>
