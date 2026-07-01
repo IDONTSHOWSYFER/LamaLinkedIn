@@ -11,7 +11,8 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:generate": "prisma generate",
     "test": "vitest run",
-    "lint": "tsc --noEmit"
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",

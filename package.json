@@ -9,11 +9,16 @@
     "build": "pnpm run build:extension && pnpm run build:api",
     "db:migrate": "pnpm --filter @lbp/api db:migrate",
     "db:seed": "pnpm --filter @lbp/api db:seed",
-    "test": "pnpm --filter @lbp/extension test && pnpm --filter @lbp/api test",
+    "test": "pnpm -r test",
     "lint": "pnpm -r lint"
   },
   "devDependencies": {
-    "typescript": "^5.5.0"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.6.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.62.1"
   },
   "pnpm": {
     "overrides": {
