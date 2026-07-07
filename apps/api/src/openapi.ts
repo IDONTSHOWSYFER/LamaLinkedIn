@@ -11,8 +11,8 @@ export const openapiSpec = {
       'Sécurité : bcrypt, validation Zod, en-têtes OWASP, rate limiting Redis, anti-énumération.',
   },
   servers: [
+    { url: 'https://lama-api-l09j.onrender.com', description: 'Production (Render)' },
     { url: 'http://localhost:3001', description: 'Local' },
-    { url: 'https://lama-linked-in-api.onrender.com', description: 'Production (Render)' },
   ],
   tags: [
     { name: 'Système' },
