@@ -4,7 +4,7 @@ import { assistMode } from './assist';
 import { agentMode } from './agent';
 import { injectPanel, updatePanel, updatePanelTimer, updatePanelStatus, removePanel } from './panel';
 import { log, error } from '@/lib/log';
-import { contextAlive, registerTeardown } from './context';
+import { contextAlive, registerTeardown, safeSendMessage } from './context';
 
 // Chrome peut injecter ce script deux fois (auto-injection du manifest +
 // executeScript depuis le popup). On reste inerte au second passage pour ne
@@ -184,9 +184,7 @@ async function onAction(type: 'like' | 'comment', postId: string, content: strin
   const updated = await getSession();
   updatePanel(updated, currentMode);
 
-  try {
-    chrome.runtime.sendMessage({ type: 'LBP_ACTION_LOGGED', event });
-  } catch {}
+  safeSendMessage({ type: 'LBP_ACTION_LOGGED', event });
 }
 
 function stop() {

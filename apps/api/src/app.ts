@@ -23,12 +23,20 @@ const ALLOWED_ORIGINS = [
 ].filter(Boolean);
 
 const EXTENSION_ID = process.env.EXTENSION_ID || 'mjabdegoelohpjfgcljlphoeffiafdpi';
+// ID d'une build "unpacked" locale (mode développeur), différent de celui du
+// Web Store — autorisé temporairement pour tester une version pas encore
+// publiée contre l'API de prod. À retirer une fois la review CWS passée.
+const DEV_EXTENSION_ID = process.env.DEV_EXTENSION_ID || 'nenolillocbjjoomaepjnjonpclgmlii';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (origin === `chrome-extension://${EXTENSION_ID}` || ALLOWED_ORIGINS.includes(origin)) {
+    if (
+      origin === `chrome-extension://${EXTENSION_ID}` ||
+      origin === `chrome-extension://${DEV_EXTENSION_ID}` ||
+      ALLOWED_ORIGINS.includes(origin)
+    ) {
       return callback(null, true);
     }
     if (!IS_PROD && (origin.startsWith('chrome-extension://') || origin.startsWith('http://localhost'))) {

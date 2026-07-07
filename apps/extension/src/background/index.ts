@@ -4,7 +4,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({ lbp_session: { botState: 'idle' } });
 });
 
-chrome.runtime.onMessage.addListener((msg, _sender) => {
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'LBP_NOTIFY') {
     try {
       chrome.notifications.create({
@@ -25,21 +25,31 @@ chrome.runtime.onMessage.addListener((msg, _sender) => {
   }
 
   if (msg?.type === 'LBP_ACTION_LOGGED') {
-    // Sync to API if user is authenticated
-    chrome.storage.local.get(['lbp_auth', 'lbp_api_url'], (result) => {
-      const auth = result.lbp_auth;
-      if (auth?.token) {
-        const apiUrl = result.lbp_api_url || 'https://lama-api-l09j.onrender.com';
-        fetch(`${apiUrl}/api/events`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${auth.token}`,
-          },
-          body: JSON.stringify(msg.event),
-        }).catch(() => {});
+    // Async work (storage read + fetch) : on renvoie `true` pour dire à Chrome
+    // de garder le service worker vivant jusqu'à sendResponse, sinon il peut
+    // être tué en plein milieu et l'événement part dans le vide, en silence.
+    (async () => {
+      try {
+        const result = await chrome.storage.local.get(['lbp_auth', 'lbp_api_url']);
+        const auth = result.lbp_auth;
+        if (auth?.token) {
+          const apiUrl = result.lbp_api_url || 'https://lama-api-l09j.onrender.com';
+          await fetch(`${apiUrl}/api/events`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${auth.token}`,
+            },
+            body: JSON.stringify(msg.event),
+          });
+        }
+      } catch {
+        // Réseau ou API indisponible : on ne bloque jamais l'utilisateur pour ça.
+      } finally {
+        sendResponse({ ok: true });
       }
-    });
+    })();
+    return true;
   }
 
   // Pont d'auth : le site web transmet le token de connexion, on le stocke pour
@@ -50,6 +60,7 @@ chrome.runtime.onMessage.addListener((msg, _sender) => {
   if (msg?.type === 'LBP_CLEAR_AUTH') {
     chrome.storage.local.remove('lbp_auth');
   }
+  return undefined;
 });
 
 // Keep service worker alive during bot sessions
