@@ -3,7 +3,7 @@ import { ManifestV3Export } from '@crxjs/vite-plugin';
 const manifest: ManifestV3Export = {
   manifest_version: 3,
   name: 'Lama Linked.In',
-  version: '3.2.0',
+  version: '3.2.1',
   description: 'Extension Linked.In intelligente et 100% gratuite : mode Assisté (highlights + suggestions) et mode Agent (automatisation complète).',
   permissions: ['storage', 'scripting', 'activeTab', 'tabs', 'notifications', 'alarms'],
   host_permissions: ['https://www.linkedin.com/*'],
